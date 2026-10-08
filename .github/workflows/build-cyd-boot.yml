@@ -234,3 +234,11 @@ jobs:
           name: marauder-cyd-${{ env.VARIANT }}
           path: out/
           retention-days: 30
+
+      # Boyut analizi icin linker haritasi ve ELF
+      - name: Upload build files
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildfiles-${{ env.VARIANT }}
+          path: build_cyd/
+          retention-days: 30
