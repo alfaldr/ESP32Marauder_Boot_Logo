@@ -8,6 +8,19 @@
 #include "lang_var.h"
 #include <esp_ota_ops.h>
 
+// Number of SSID bytes that are safe to read from a sniffed 802.11 frame.
+// payload[37] is the transmitter-controlled SSID length field; the SSID itself
+// starts at payload[38]. A malformed or oversized length can point past the end
+// of the captured frame, so clamp the count to what was actually captured
+// (len, already reduced by the FCS when inside a management frame).
+// Evaluates to min(payload[37], len - 38) and never returns a negative value.
+#define SSID_LEN(pkt, len) \
+  ((len) > 37 \
+    ? ((38 + (pkt)->payload[37] > (len)) \
+        ? ((len) > 38 ? (len) - 38 : 0) \
+        : (int)(pkt)->payload[37]) \
+    : 0)
+
 #ifdef HAS_PSRAM
   struct mac_addr* mac_history = nullptr;
 #endif
@@ -7471,6 +7484,7 @@ void WiFiScan::apSnifferCallbackFull(void* buf, wifi_promiscuous_pkt_type_t type
     // We got an AP. Check if in list and add if not
     if ((snifferPacket->payload[0] == 0x80) && (buf == 0))
     {
+      if (len < 38) return; // too short to contain SSID tag
       // Get security info
       uint8_t security_type = wifi_scan_obj.getSecurityType(snifferPacket->payload, len);
       
@@ -7517,7 +7531,7 @@ void WiFiScan::apSnifferCallbackFull(void* buf, wifi_promiscuous_pkt_type_t type
         if (snifferPacket->payload[37] <= 0)
           display_string.concat(addr);
         else {
-          for (int i = 0; i < snifferPacket->payload[37]; i++)
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
           {
             Serial.print((char)snifferPacket->payload[i + 38]);
             display_string.concat((char)snifferPacket->payload[i + 38]);
@@ -8047,7 +8061,9 @@ int WiFiScan::extractPineScanChannel(const uint8_t* payload, int len) {
 
 // Function to count tagged parameters in beacon frames
 bool countPineScanTaggedParameters(const uint8_t* payload, int len) {
+  if (len < 38) return false; // too short to contain the SSID tag header
   int ssid_len = payload[37];
+  if (ssid_len > 32) return false; // SSID max per 802.11 spec
   int pos = 36 + ssid_len + 2;
   
   // Check if next tag is the DS Parameter (channel info) - tag number 3
@@ -8082,7 +8098,8 @@ void WiFiScan::pineScanSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t ty
     
     if ((snifferPacket->payload[0] == 0x80) && (buff == 0)) {
       buffer_obj.append(snifferPacket, len); // Capture all beacons
-      
+      if (len < 38) return; // too short to contain SSID tag (keep the captured frame)
+
       // Extract MAC address for Pineapple detection
       uint8_t mac_addr[6];
       for (int i = 0; i < 6; i++) {
@@ -8186,7 +8203,7 @@ void WiFiScan::pineScanSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t ty
         if (snifferPacket->payload[37] <= 0) {
           essid = "[hidden]";
         } else {
-          for (int i = 0; i < snifferPacket->payload[37]; i++) {
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++) {
             essid.concat((char)snifferPacket->payload[i + 38]);
           }
         }
@@ -8271,7 +8288,7 @@ void WiFiScan::pineScanSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t ty
         if (snifferPacket->payload[37] <= 0) {
           essid = "[hidden]";
         } else {
-          for (int i = 0; i < snifferPacket->payload[37]; i++) {
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++) {
             essid.concat((char)snifferPacket->payload[i + 38]);
           }
         }
@@ -8441,7 +8458,8 @@ void WiFiScan::multiSSIDSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t t
     
     if ((snifferPacket->payload[0] == 0x80) && (buff == 0)) {
       buffer_obj.append(snifferPacket, len); // Capture all beacons
-      
+      if (len < 38) return; // too short to contain SSID tag (keep the captured frame)
+
       // Extract MAC address
       uint8_t mac_addr[6];
       for (int i = 0; i < 6; i++) {
@@ -8458,7 +8476,7 @@ void WiFiScan::multiSSIDSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t t
       uint16_t ssid_hash = 0;
       if (snifferPacket->payload[37] > 0) {
         // Compute Whole SSID hash directly from payload
-        for (int i = 0; i < (int)snifferPacket->payload[37]; i++) {
+        for (int i = 0; i < SSID_LEN(snifferPacket, len); i++) {
           char c = snifferPacket->payload[i + 38];
           ssid_hash = ((ssid_hash << 5) + ssid_hash) + c;
         }
@@ -8508,7 +8526,7 @@ void WiFiScan::multiSSIDSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t t
         if (snifferPacket->payload[37] <= 0) {
           essid = "[hidden]";
         } else {
-          for (int i = 0; i < snifferPacket->payload[37]; i++) {
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++) {
             essid.concat((char)snifferPacket->payload[i + 38]);
           }
         }
@@ -8595,7 +8613,7 @@ void WiFiScan::multiSSIDSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t t
         if (snifferPacket->payload[37] <= 0) {
           essid = "[hidden]";
         } else {
-          for (int i = 0; i < snifferPacket->payload[37]; i++) {
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++) {
             essid.concat((char)snifferPacket->payload[i + 38]);
           }
         }
@@ -8971,7 +8989,7 @@ void WiFiScan::beaconSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type
           if (snifferPacket->payload[37] <= 0)
             display_string.concat(addr);
           else {
-            for (int i = 0; i < snifferPacket->payload[37]; i++)
+            for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
             {
               Serial.print((char)snifferPacket->payload[i + 38]);
               display_string.concat((char)snifferPacket->payload[i + 38]);
@@ -9165,7 +9183,7 @@ void WiFiScan::beaconSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type
 
       else if (snifferPacket->payload[0] == 0x80) {
         if (snifferPacket->payload[37] > 0) {
-          for (int i = 0; i < snifferPacket->payload[37]; i++)
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
             essid.concat((char)snifferPacket->payload[i + 38]);
 
           //Serial.println(essid);
@@ -9932,11 +9950,13 @@ void WiFiScan::sendAssociationSleep(const char* ESSID, uint8_t bssid[6], int cha
   association_packet[22] = sequence_number & 0xFF;        // Sequence Number LSB
 
   /* SSID tag */
-  association_packet[29] = (uint8_t)strlen((char *)ESSID); // SSID Length
-  memcpy(&association_packet[30], ESSID, strlen((char *)ESSID)); // SSID
+  uint8_t essid_len = (uint8_t)strnlen(ESSID, 33);
+  if (essid_len > 32) essid_len = 32; // clamp to 802.11 max
+  association_packet[29] = essid_len; // SSID Length
+  memcpy(&association_packet[30], ESSID, essid_len); // SSID
 
   /* Supported Rates tag */
-  uint16_t offset = 30 + strlen((char *)ESSID); // Offset after SSID);
+  uint16_t offset = 30 + essid_len; // Offset after SSID);
   association_packet[offset++] = 0x01; // Supported Rates tag
   association_packet[offset++] = 0x04; // Length
   association_packet[offset++] = 0x82;  // 1 Mbps
@@ -10190,6 +10210,7 @@ void WiFiScan::wifiSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type) 
       if (type == WIFI_PKT_MGMT) { // It's management
         len -= 4;
         if ((snifferPacket->payload[0] == 0x80) && (buff == 0)) { // It's a beacon
+          if (len < 38) return; // too short to contain SSID tag
           // Get source addr
           char addr[] = "00:00:00:00:00:00";
           getMAC(addr, snifferPacket->payload, 10);
@@ -10202,7 +10223,7 @@ void WiFiScan::wifiSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type) 
           if (snifferPacket->payload[37] <= 0) // There is no ESSID. Just add BSSID
             display_string.concat(addr);
           else { // There is an ESSID. Add it
-            for (int i = 0; i < snifferPacket->payload[37]; i++)
+            for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
             {
               display_string.concat((char)snifferPacket->payload[i + 38]);
             }
@@ -10216,7 +10237,13 @@ void WiFiScan::wifiSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type) 
   }
   else if (wifi_scan_obj.currentScanMode == WIFI_SCAN_CHAN_ACT) {
     #ifndef HAS_DUAL_BAND
-      wifi_scan_obj.channel_activity[wifi_scan_obj.set_channel - 1] = wifi_scan_obj.channel_activity[wifi_scan_obj.set_channel - 1] + 1;
+      // Guard the index: set_channel is written by the channel hopper (main task) and
+      // read here in the RX callback (WiFi task). changeChannel() assigns it straight
+      // from an int parameter, so an out-of-spec value (0, or a negative that wraps
+      // to a large uint8_t) would index outside channel_activity[MAX_CHANNEL] and
+      // corrupt the adjacent heap. Clamp to the valid 1..MAX_CHANNEL range.
+      if (wifi_scan_obj.set_channel >= 1 && wifi_scan_obj.set_channel <= MAX_CHANNEL)
+        wifi_scan_obj.channel_activity[wifi_scan_obj.set_channel - 1] = wifi_scan_obj.channel_activity[wifi_scan_obj.set_channel - 1] + 1;
     #else
       wifi_scan_obj.channel_activity[wifi_scan_obj.dual_band_channel_index] = wifi_scan_obj.channel_activity[wifi_scan_obj.dual_band_channel_index] + 1;
     #endif
@@ -10400,7 +10427,7 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
           return;
 
         if (snifferPacket->payload[37] > 0) {
-          for (int i = 0; i < snifferPacket->payload[37]; i++)
+          for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
             essid.concat((char)snifferPacket->payload[i + 38]);
         }
 
