@@ -2044,6 +2044,8 @@ void MenuFunctions::buildBluetoothFoxHuntMenu() {
 
 // Function to build the menus
 void MenuFunctions::buildBootLogMenu() {
+  bootLogMenu.list->clear();
+
   char line[40];
   const uint8_t entries = bootlog::count();
   const uint8_t shown = entries < 8 ? entries : 8;
@@ -2055,8 +2057,7 @@ void MenuFunctions::buildBootLogMenu() {
   for (uint8_t index = 0; index < shown; ++index) {
     const bool critical = bootlog::describeIsCritical(index);
     bootlog::describe(index, line, sizeof(line));
-    char label[40];
-    snprintf(label, sizeof(label), "%s", line);
+    const char *label = line;
     this->addNodes(&bootLogMenu, label, critical ? TFTRED : TFTWHITE, 0, [this]() {});
   }
 
