@@ -1,0 +1,236 @@
+name: Build CYD 2432S028 (custom boot splash)
+
+# Resmi CI'in (build_parallel.yml) CYD 2432S028 satiriyla birebir ayni
+# parametrelerle, yalnizca tek hedefi derler.
+on:
+  push:
+    branches:
+      - custom-boot-splash
+      - baseline-check
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: "custom = renkli splash'li build, baseline = splash degisikligi geri alinmis saf upstream build"
+        required: false
+        type: choice
+        default: custom
+        options:
+          - custom
+          - baseline
+
+permissions:
+  contents: read
+
+jobs:
+  build-cyd:
+    name: build cyd_2432S028
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # Baseline modu: renkli splash degisikliklerini geri al, boylece ayni
+      # pipeline ile saf upstream kodu derlenir ve boyut farki ayristirilir.
+      - name: Select variant
+        run: |
+          VARIANT="${{ inputs.variant }}"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "$GITHUB_REF_NAME" = "baseline-check" ]; then
+              VARIANT=baseline
+            else
+              VARIANT=custom
+            fi
+          fi
+          echo "VARIANT=$VARIANT" >> $GITHUB_ENV
+          echo "::notice::Varyant: $VARIANT (ref: $GITHUB_REF_NAME)"
+          if [ "$VARIANT" = "baseline" ]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              git checkout HEAD^ -- \
+                esp32_marauder/BootSplashBitmap.h \
+                esp32_marauder/Display.cpp \
+                esp32_marauder/configs.h
+              echo "::notice::Splash degisikligi HEAD^'den geri yuklendi"
+            else
+              echo "::notice::HEAD^ yok; agac zaten saf upstream"
+            fi
+            git --no-pager diff --stat
+          fi
+
+      - name: Install Arduino CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+          arduino-cli version
+
+      - name: Install ESP32 core 2.0.11
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@2.0.11 \
+            --additional-urls https://github.com/espressif/arduino-esp32/releases/download/2.0.11/package_esp32_dev_index.json
+          arduino-cli core list
+
+      # --- Kutuphaneler: resmi CI ile ayni surumler ---
+      - uses: actions/checkout@v4
+        with:
+          repository: marian-craciunescu/ESP32Ping
+          ref: 1.6
+          path: CustomESP32Ping
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ESP32Async/AsyncTCP
+          ref: v3.4.8
+          path: CustomAsyncTCP
+
+      - uses: actions/checkout@v4
+        with:
+          repository: stevemarple/MicroNMEA
+          ref: v2.0.6
+          path: CustomMicroNMEA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ESP32Async/ESPAsyncWebServer
+          ref: v3.8.1
+          path: CustomESPAsyncWebServer
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Bodmer/TFT_eSPI
+          ref: V2.5.34
+          path: CustomTFT_eSPI
+
+      - uses: actions/checkout@v4
+        with:
+          repository: PaulStoffregen/XPT2046_Touchscreen
+          ref: v1.4
+          path: CustomXPT2046_Touchscreen
+
+      - uses: actions/checkout@v4
+        with:
+          repository: lvgl/lv_arduino
+          ref: 3.0.0
+          path: Customlv_arduino
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Bodmer/JPEGDecoder
+          ref: 1.8.0
+          path: CustomJPEGDecoder
+
+      - uses: actions/checkout@v4
+        with:
+          repository: h2zero/NimBLE-Arduino
+          ref: 1.3.8
+          path: CustomNimBLE-Arduino
+
+      - uses: actions/checkout@v4
+        with:
+          repository: adafruit/Adafruit_NeoPixel
+          ref: 1.12.0
+          path: CustomAdafruit_NeoPixel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: bblanchon/ArduinoJson
+          ref: v6.18.2
+          path: CustomArduinoJson
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ivanseidel/LinkedList
+          ref: v1.3.3
+          path: CustomLinkedList
+
+      - uses: actions/checkout@v4
+        with:
+          repository: plerup/espsoftwareserial
+          ref: 8.1.0
+          path: CustomEspSoftwareSerial
+
+      - uses: actions/checkout@v4
+        with:
+          repository: adafruit/Adafruit_BusIO
+          ref: 1.15.0
+          path: CustomAdafruit_BusIO
+
+      - uses: actions/checkout@v4
+        with:
+          repository: adafruit/Adafruit_MAX1704X
+          ref: 1.0.2
+          path: CustomAdafruit_MAX1704X
+
+      - name: Add Adafruit_TCA8418 from repository
+        run: cp -r libraries/Adafruit_TCA8418 CustomAdafruit_TCA8418
+
+      # Resmi CI'daki ArminJo action'inin yaptigi gibi *Custom* klasorlerini
+      # Arduino kutuphane dizinine tasi.
+      - name: Register libraries
+        run: |
+          mkdir -p $HOME/Arduino/libraries
+          rm -rf Custom*/.git
+          mv Custom* $HOME/Arduino/libraries/
+          ls $HOME/Arduino/libraries
+
+      - name: Configure TFT_eSPI for CYD 2432S028
+        run: |
+          TFT=$HOME/Arduino/libraries/CustomTFT_eSPI
+          rm -f $TFT/User_Setup_Select.h
+          cp User*.h $TFT/
+          sed -i 's|^//#include <User_Setup_cyd_micro.h>|#include <User_Setup_cyd_micro.h>|' \
+            $TFT/User_Setup_Select.h
+          grep -Fqx '#include <User_Setup_cyd_micro.h>' $TFT/User_Setup_Select.h \
+            || { echo "::error::User_Setup_cyd_micro.h secilemedi"; exit 1; }
+          grep -E 'TFT_WIDTH|TFT_HEIGHT' $TFT/User_Setup_cyd_micro.h
+
+      # Resmi CI'in 2.0.11 icin uyguladigi duzeltmeler
+      - name: Patch platform.txt for core 2.0.11
+        run: |
+          for i in $(find /home/runner/.arduino15/packages/esp32/hardware/esp32/ -name platform.txt); do
+            sed -i 's/compiler.c.elf.libs.esp32=/compiler.c.elf.libs.esp32=-zmuldefs /' "$i"
+            sed -i 's/-fexceptions/-fno-exceptions/g' "$i"
+          done
+
+      - name: Compile Marauder for CYD 2432S028
+        run: |
+          arduino-cli compile \
+            --fqbn "esp32:esp32:d32:PartitionScheme=min_spiffs" \
+            --warnings none \
+            --build-property "compiler.cpp.extra_flags=-DMARAUDER_CYD_MICRO" \
+            --output-dir build_cyd \
+            esp32_marauder
+
+      - name: Collect flash files
+        run: |
+          set -euo pipefail
+          # Resmi JCMK installer'in bu kart icin kullandigi dosyalar (v1.18.0).
+          # Once Arduino core icinde ayni dosyayi ara, bulunamazsa oradan indir.
+          BASE="https://justcallmekoko.github.io/MarauderInstaller/firmware/v1.18.0"
+          PREFIX="esp32_marauder_installer_v1_18_0_20261006_cyd_2432S028"
+
+          copy_first() {
+            src=$(find "$HOME/.arduino15" -name "$1" 2>/dev/null | head -1 || true)
+            if [ -n "$src" ]; then
+              echo "core'den: $src"
+              cp "$src" "$2"
+            else
+              echo "indiriliyor: $3"
+              curl -fsSL -o "$2" "$3"
+            fi
+          }
+
+          mkdir -p out
+          cp build_cyd/esp32_marauder.ino.bin out/firmware.bin
+          copy_first bootloader_d32.bin       out/bootloader.bin  "$BASE/$PREFIX.bootloader.bin"
+          copy_first partitions_min_spiffs.bin out/partitions.bin "$BASE/$PREFIX.partition-table.bin"
+          copy_first boot_app0.bin            out/ota-data.bin    "$BASE/$PREFIX.ota-data.bin"
+          ls -l out/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marauder-cyd-${{ env.VARIANT }}
+          path: out/
+          retention-days: 30
