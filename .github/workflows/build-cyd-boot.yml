@@ -165,12 +165,28 @@ jobs:
 
       - name: Collect flash files
         run: |
-          CORE="$HOME/.arduino15/packages/esp32/hardware/esp32/2.0.11"
+          set -euo pipefail
+          # Resmi JCMK installer'in bu kart icin kullandigi dosyalar (v1.18.0).
+          # Once Arduino core icinde ayni dosyayi ara, bulunamazsa oradan indir.
+          BASE="https://justcallmekoko.github.io/MarauderInstaller/firmware/v1.18.0"
+          PREFIX="esp32_marauder_installer_v1_18_0_20261006_cyd_2432S028"
+
+          copy_first() {
+            src=$(find "$HOME/.arduino15" -name "$1" 2>/dev/null | head -1 || true)
+            if [ -n "$src" ]; then
+              echo "core'den: $src"
+              cp "$src" "$2"
+            else
+              echo "indiriliyor: $3"
+              curl -fsSL -o "$2" "$3"
+            fi
+          }
+
           mkdir -p out
           cp build_cyd/esp32_marauder.ino.bin out/firmware.bin
-          cp "$(find $CORE/tools/sdk -name 'bootloader_d32.bin' | head -1)" out/bootloader.bin
-          cp "$(find $CORE/tools -name 'partitions_min_spiffs.bin' | head -1)" out/partitions.bin
-          cp "$(find $CORE/tools -name 'boot_app0.bin' | head -1)" out/boot_app0.bin
+          copy_first bootloader_d32.bin       out/bootloader.bin  "$BASE/$PREFIX.bootloader.bin"
+          copy_first partitions_min_spiffs.bin out/partitions.bin "$BASE/$PREFIX.partition-table.bin"
+          copy_first boot_app0.bin            out/ota-data.bin    "$BASE/$PREFIX.ota-data.bin"
           ls -l out/
 
       - name: Upload artifact
