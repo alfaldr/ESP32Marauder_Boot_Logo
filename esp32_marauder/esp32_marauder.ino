@@ -50,6 +50,7 @@ https://www.online-utility.org/image/convert/to/XBM
 
 #ifdef HAS_SCREEN
   #include "Display.h"
+#include "BootLog.h"
   #include "MenuFunctions.h"
 #endif
 
@@ -236,12 +237,16 @@ uint32_t currentTime  = 0;
 void setup()
 {
   randomSeed(esp_random());
-  
+
   #ifndef DEVELOPER
     esp_log_level_set("*", ESP_LOG_NONE);
   #endif
-  
+
   Serial.begin(115200);
+
+  // Acilis/kapanis gunlugu: ekran ve butun dongu ONCESI okunmali, cunku
+  // bu oturumun verisi NVS'de ezilmeden once onceki oturumun kaydini aliriz.
+  bootlog::init();
 
   #ifdef HAS_ACT_LED
     pinMode(ACT_LED_PIN, OUTPUT);
@@ -420,6 +425,10 @@ void loop()
 {
   currentTime = millis();
   bool mini = false;
+
+  // Calisma suresini periyodik olarak NVS'ye yaz: cihaz bir sonraki acilista
+  // "ne kadar dayandi" bilgisini bulsun.
+  bootlog::heartbeat();
 
   #ifdef SCREEN_BUFFER
     #ifndef HAS_ILI9341

@@ -1,9 +1,13 @@
 #include "Display.h"
 #include "BootSplashBitmap.h"
+#include "BootLog.h"
 #include "DisplayLine.h"
 #include "lang_var.h"
 
 #ifdef HAS_SCREEN
+
+// Boot ekraninda acilis gunlugu satirinin yerlesimi (gorselin alt bosligi).
+#define BOOT_LOG_Y 184
 
 Display::Display()
 #ifdef HAS_CYD_TOUCH
@@ -270,6 +274,19 @@ void Display::drawBootSplash() {
   tft.setTextWrap(false);
   tft.setFreeFont(NULL);
   tft.setTextSize(1);
+
+  // Acilis gunlugu: bir onceki oturumun bitisini ekrana yaz.
+  // Kullanici cihazin basinda degilken olusmus bir cokmeyi sonra gorebilsin.
+  // Kritik kayitlar (brownout / panic / watchdog) kirmizi gosterilir.
+  const char *note = bootlog::lastEvent();
+  if (note != nullptr && note[0] != '\0') {
+    tft.setTextSize(1);
+    tft.fillRect(0, BOOT_LOG_Y, tft.width(), 12, TFT_BLACK);
+    tft.setTextColor(bootlog::lastEventIsCritical() ? TFT_RED : TFT_WHITE, TFT_BLACK);
+    tft.drawCentreString(note, tft.width() / 2, BOOT_LOG_Y, 1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setTextSize(1);
+  }
 }
 
 void Display::tftDrawGraphObjects(byte x_scale)
