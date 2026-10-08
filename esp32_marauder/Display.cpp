@@ -1,9 +1,33 @@
 #include "Display.h"
-#include "BootSplashBitmap.h"
+#include "BootSplashAnim.h"
 #include "DisplayLine.h"
 #include "lang_var.h"
 
 #ifdef HAS_SCREEN
+
+namespace {
+
+// Delta+RLE kodlanmis boot animasyonundan tek bir satiri cozer.
+// Kod: (renk indeksi, varint uzunluk) tekrarlari. Satiri doldurunca biter.
+void decodeBootAnimRow(const uint8_t *&cursor, uint16_t *out, uint16_t width) {
+  uint16_t filled = 0;
+  while (filled < width) {
+    const uint8_t index = *cursor++;
+    uint16_t count = 0;
+    uint8_t shift = 0;
+    uint8_t byte;
+    do {
+      byte = *cursor++;
+      count |= static_cast<uint16_t>(byte & 0x7F) << shift;
+      shift += 7;
+    } while (byte & 0x80);
+
+    const uint16_t colour = BOOT_ANIM_PALETTE[index & 0x07];
+    for (uint16_t i = 0; i < count; ++i) out[filled++] = colour;
+  }
+}
+
+}  // namespace
 
 Display::Display()
 #ifdef HAS_CYD_TOUCH
@@ -256,20 +280,51 @@ void Display::drawBootSplash() {
     return;
   #endif
 
-  // Renkli full-screen boot splash (BootSplashBitmap.h).
+  // Delta+RLE kodlanmis renkli boot animasyonu (BootSplashAnim.h).
   //
-  // Cast YAPILMAZ: BOOT_IMAGE const uint16_t PROGMEM[] oldugu icin TFT_eSPI'nin
-  // PROGMEM overload'ini (pushImage(..., const uint16_t*)) secmesi gerekir.
-  // O surum satirlari bir stack tamponuna kopyalayip oradan gonderir; cast
-  // edilmis surum ise flash isaretcisini dogrudan SPI DMA'ya verir ve DMA
-  // flash'tan okuyamadigi icin ekranda CRT benzeri bozuk renkler cikar.
+  // Kare 0 tam olarak, sonraki kareler sadece bir onceki kareden degisen
+  // satirlar olarak saklanir; ekranda zaten dogru duran satirlar yeniden
+  // cizilmez. Satirlar once stack tamponuna cozulur, sonra pushImage ile
+  // gonderilir; boylece SPI DMA veriyi DRAM'dan okur (flash'tan okuyamaz).
   tft.fillScreen(TFT_BLACK);
-  tft.pushImage(BOOT_IMAGE_X, BOOT_IMAGE_Y,
-                BOOT_IMAGE_WIDTH, BOOT_IMAGE_HEIGHT,
-                BOOT_IMAGE);
   tft.setTextWrap(false);
   tft.setFreeFont(NULL);
   tft.setTextSize(1);
+
+  uint16_t row_buffer[BOOT_ANIM_WIDTH];
+  const uint8_t *cursor = BOOT_ANIM_DATA;
+
+  for (uint8_t loop = 0; loop < BOOT_ANIM_LOOPS; ++loop) {
+    for (uint8_t frame = 0; frame < BOOT_ANIM_FRAME_COUNT; ++frame) {
+      const uint8_t *limit = BOOT_ANIM_DATA + BOOT_ANIM_OFFSET[frame + 1];
+
+      if (frame == 0) {
+        for (uint16_t y = 0; y < BOOT_ANIM_HEIGHT; ++y) {
+          decodeBootAnimRow(cursor, row_buffer, BOOT_ANIM_WIDTH);
+          tft.pushImage(0, y, BOOT_ANIM_WIDTH, 1, row_buffer);
+        }
+      } else {
+        while (cursor < limit) {
+          uint16_t row = 0;
+          uint8_t shift = 0;
+          uint8_t byte;
+          do {
+            byte = *cursor++;
+            row |= static_cast<uint16_t>(byte & 0x7F) << shift;
+            shift += 7;
+          } while (byte & 0x80);
+
+          if (row == BOOT_ANIM_ROW_END) break;
+
+          decodeBootAnimRow(cursor, row_buffer, BOOT_ANIM_WIDTH);
+          tft.pushImage(0, row, BOOT_ANIM_WIDTH, 1, row_buffer);
+        }
+      }
+
+      cursor = limit;
+      delay(BOOT_ANIM_FRAME_DELAY_MS);
+    }
+  }
 }
 
 void Display::tftDrawGraphObjects(byte x_scale)
