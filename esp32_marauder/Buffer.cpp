@@ -7,12 +7,18 @@ Buffer::Buffer(){
   bufB = (uint8_t*)malloc(BUF_SIZE);
 }
 
+void Buffer::setPcapng(bool enabled) {
+  if (writing) return; // cannot switch format mid-capture
+  pcapng = enabled;
+}
+
 void Buffer::createFile(const char* name, bool is_pcap, bool is_gpx){
   int i=0;
   String prefix = directory ? String(directory) + "/" : "/";
   if (is_pcap) {
+    const char* ext = pcapng ? ".pcapng" : ".pcap";
     do{
-      fileName = prefix+String(name)+"_"+(String)i+".pcap";
+      fileName = prefix+String(name)+"_"+(String)i+ext;
       i++;
     } while(fs->exists(fileName));
   }
@@ -44,9 +50,22 @@ void Buffer::open(bool is_pcap){
   writing = true;
 
   if (is_pcap) {
-    uint8_t header[marauder::kPcapGlobalHeaderSize];
-    marauder::makePcapGlobalHeader(SNAP_LEN, header);
-    write(header, sizeof(header));
+    if (pcapng) {
+      // Section Header + Interface Description. pcapng has no single global
+      // header: every block repeats its own length, and the interface block
+      // carries the link type and snap length instead.
+      uint8_t block[marauder::sectionHeaderBlockSize()];
+      size_t n = marauder::makeSectionHeaderBlock(block, sizeof(block));
+      write(block, n);
+
+      uint8_t idb[marauder::interfaceDescriptionBlockSize()];
+      n = marauder::makeInterfaceDescriptionBlock(idb, sizeof(idb), SNAP_LEN);
+      write(idb, n);
+    } else {
+      uint8_t header[marauder::kPcapGlobalHeaderSize];
+      marauder::makePcapGlobalHeader(SNAP_LEN, header);
+      write(header, sizeof(header));
+    }
   }
 }
 
@@ -90,27 +109,67 @@ void Buffer::gpxOpen(const char* file_name, fs::FS* fs, bool serial) {
   openFile(file_name, fs, serial, false, true);
 }
 
-void Buffer::add(const uint8_t* buf, uint32_t len, bool is_pcap){
-  // buffer is full -> drop packet
-  if((useA && bufSizeA + len >= BUF_SIZE && bufSizeB > 0) || (!useA && bufSizeB + len >= BUF_SIZE && bufSizeA > 0)){
-    //Serial.print(";"); 
-    return;
+void Buffer::add(const uint8_t* buf, uint32_t len, bool is_pcap, const char* comment, size_t comment_len){
+  if (comment == nullptr) comment_len = 0;
+  else if (comment_len == 0) comment_len = strlen(comment);
+  if (comment_len > marauder::kMaxPacketComment) comment_len = marauder::kMaxPacketComment;
+
+  // Total bytes this frame occupies, container header included. The original
+  // check only counted the payload, so a frame that just fitted could still
+  // write its header past the end of the buffer.
+  size_t overhead = 0;
+  if (is_pcap) {
+    overhead = pcapng ? marauder::packetBlockSize(len, comment_len) : 16u;
   }
-  
-  if(useA && bufSizeA + len + 16 >= BUF_SIZE && bufSizeB == 0){
-    useA = false;
-    //Serial.println("\nswitched to buffer B");
-  }
-  else if(!useA && bufSizeB + len + 16 >= BUF_SIZE && bufSizeA == 0){
-    useA = true;
-    //Serial.println("\nswitched to buffer A");
+  const size_t footprint = len + overhead;
+
+  if (footprint > BUF_SIZE) { dropped_frames++; return; }
+
+  // Keep filling the active buffer until it can no longer hold a frame, then
+  // move to the spare so the main loop always has one contiguous block to
+  // flush. Only give up once neither buffer has room.
+  if (useA) {
+    if (bufSizeA + footprint > BUF_SIZE) {
+      if (bufSizeB + footprint > BUF_SIZE) { dropped_frames++; return; }
+      useA = false;
+    }
+  } else {
+    if (bufSizeB + footprint > BUF_SIZE) {
+      if (bufSizeA + footprint > BUF_SIZE) { dropped_frames++; return; }
+      useA = true;
+    }
   }
 
   uint32_t microSeconds = micros(); // e.g. 45200400 => 45s 200ms 400us
   uint32_t seconds = (microSeconds/1000)/1000; // e.g. 45200400/1000/1000 = 45200 / 1000 = 45s
 
   microSeconds -= seconds*1000*1000; // e.g. 45200400 - 45*1000*1000 = 45200400 - 45000000 = 400us (because we only need the offset)
-  
+
+  if (is_pcap && pcapng) {
+    const uint64_t timestamp_us =
+        static_cast<uint64_t>(seconds) * 1000000ull + microSeconds;
+
+    uint8_t header[marauder::kPacketBlockHeaderSize];
+    size_t total = marauder::makePacketBlockHeader(
+        header, sizeof(header), timestamp_us, len, comment, comment_len);
+    write(header, sizeof(header));
+
+    write(buf, len);
+
+    // Every variable-length field is padded to a 32-bit boundary.
+    const size_t padding = marauder::pad4(len) - len;
+    if (padding > 0) {
+      uint8_t zeros[3] = {0, 0, 0};
+      write(zeros, padding);
+    }
+
+    uint8_t footer[marauder::packetBlockFooterSize(marauder::kMaxPacketComment)];
+    size_t n = marauder::makePacketBlockFooter(
+        footer, sizeof(footer), total, comment, comment_len);
+    write(footer, n);
+    return;
+  }
+
   if (is_pcap) {
     write(seconds); // ts_sec
     write(microSeconds); // ts_usec
@@ -121,10 +180,10 @@ void Buffer::add(const uint8_t* buf, uint32_t len, bool is_pcap){
   write(buf, len); // packet payload
 }
 
-void Buffer::append(wifi_promiscuous_pkt_t *packet, int len) {
+void Buffer::append(wifi_promiscuous_pkt_t *packet, int len, const char* comment) {
   bool save_packet = settings_obj.loadSetting<bool>(text_table4[7]);
   if (save_packet) {
-    add(packet->payload, len, true);
+    add(packet->payload, len, true, comment, 0);
   }
 }
 

@@ -69,6 +69,10 @@ struct AccessPoint {
   bool has_msg_2;
   bool has_msg_3;
   bool has_msg_4;
+  // Set once this AP's beacon has been written to the capture buffer. A beacon
+  // arrives ~10x/second and would otherwise fill the write buffer before a
+  // single EAPOL frame lands; one beacon per AP is enough for aircrack-ng.
+  bool beacon_saved;
   uint32_t last_seen_ms;
 };
 

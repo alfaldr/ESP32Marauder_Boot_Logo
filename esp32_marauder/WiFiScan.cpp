@@ -10453,6 +10453,7 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
         ap.has_msg_2 = false;
         ap.has_msg_3 = false;
         ap.has_msg_4 = false;
+        ap.beacon_saved = false;
         ap.beacon[0] = snifferPacket->payload[34];
         ap.beacon[1] = snifferPacket->payload[35];
         ap.sec = security_type;
@@ -10596,8 +10597,50 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
     }
   }
 
-  if ((is_eapol) || (is_beacon))
-    buffer_obj.append(snifferPacket, len);
+  // Only the first beacon per AP reaches the capture buffer. Beacons arrive
+  // roughly ten times a second and would consume the whole buffer before a
+  // client ever reassociates, dropping the very EAPOL frames we are after.
+  // aircrack-ng only needs one beacon per network for the ESSID and sequence
+  // numbers, so nothing is lost.
+  bool save_frame = false;
+  String comment;
+
+  if (is_eapol) {
+    // In a data frame addr1 (offset 4) is the receiver, addr2 (offset 10) the
+    // transmitter and addr3 (offset 16) the BSSID of the network the frame
+    // belongs to. `bssid`/`addr2` above are not populated on this path, so
+    // derive both explicitly here -- otherwise the capture says nothing about
+    // which network a handshake came from.
+    char bssid_mac[18];
+    char sta_mac[18];
+    getMAC(bssid_mac, snifferPacket->payload, 16);
+    if (memcmp(snifferPacket->payload + 10, snifferPacket->payload + 16, 6) == 0) {
+      // AP transmitted: addr1 is the client
+      getMAC(sta_mac, snifferPacket->payload, 4);
+    } else {
+      getMAC(sta_mac, snifferPacket->payload, 10);
+    }
+
+    comment = String("EAPOL ");
+    if (handshake_msg > 0) comment += "M" + String(handshake_msg) + " ";
+    comment += "bssid=" + String(bssid_mac) + " sta=" + String(sta_mac);
+    if (ap_index >= 0) {
+      comment += " ssid=" + access_points->get(ap_index).essid;
+    }
+    save_frame = true;
+  } else if (is_beacon && ap_index >= 0) {
+    AccessPoint ap = access_points->get(ap_index);
+    if (!ap.beacon_saved) {
+      ap.beacon_saved = true;
+      access_points->set(ap_index, ap);
+      comment = "BEACON bssid=" + bssid + " ssid=" + ap.essid;
+      save_frame = true;
+    }
+  }
+
+  if (save_frame) {
+    buffer_obj.append(snifferPacket, len, comment.c_str());
+  }
 }
 
 bool WiFiScan::filterActive() {
@@ -11265,6 +11308,12 @@ void WiFiScan::renderRawStats() {
         (this->currentScanMode == WIFI_SCAN_ACTIVE_EAPOL)) {
       display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
       display_obj.tft.println("Complete EAPOL: " + (String)this->getCompleteEapol());
+      // Frames the capture buffer had no room for. If this climbs, the capture
+      // is incomplete and the reason is visible instead of guessed at.
+      if (buffer_obj.getDropped() > 0) {
+        display_obj.tft.setTextColor(TFT_RED, TFT_BLACK);
+        display_obj.tft.println("Dropped: " + (String)buffer_obj.getDropped());
+      }
       display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
     }
     display_obj.tft.println("     RSSI: " + (String)this->min_rssi + " - " + (String)this->max_rssi);
@@ -11289,6 +11338,8 @@ void WiFiScan::renderRawStats() {
   if ((this->currentScanMode == WIFI_SCAN_EAPOL) ||
       (this->currentScanMode == WIFI_SCAN_ACTIVE_EAPOL)) {
     Serial.println("Complete EAPOL: " + (String)this->getCompleteEapol());
+    if (buffer_obj.getDropped() > 0)
+      Serial.println("Dropped frames: " + (String)buffer_obj.getDropped());
   }
   Serial.println("     RSSI: " + (String)this->min_rssi + " - " + (String)this->max_rssi);
   if (this->send_deauth)

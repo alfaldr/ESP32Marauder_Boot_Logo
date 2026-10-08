@@ -319,6 +319,7 @@ void CommandLine::runCommand(String input) {
     Serial.println(HELP_SNIFF_SAE_CMD);
     Serial.println(HELP_REMOTE_ID_CMD);
     Serial.println(HELP_STOPSCAN_CMD);
+      Serial.println(HELP_CAPFORMAT_CMD);
     #ifdef HAS_GPS
       Serial.println(HELP_WARDRIVE_CMD);
       Serial.println(HELP_WARDRIVEPOI_CMD);
@@ -368,6 +369,32 @@ void CommandLine::runCommand(String input) {
   }
 
   // Stop Scan
+  if (cmd_args.get(0) == CAPFORMAT_CMD) {
+    // pcapng carries a per-packet comment, which is what identifies the AP a
+    // captured handshake belongs to. Classic pcap stays available because
+    // aircrack-ng cannot read pcapng.
+    if (wifi_scan_obj.scanning()) {
+      Serial.println(F("Cannot change format while a capture is running."));
+      return;
+    }
+    if (cmd_args.size() < 2) {
+      Serial.print(F("Current format: "));
+      Serial.println(buffer_obj.getPcapng() ? F("pcapng") : F("pcap"));
+      return;
+    }
+    String fmt = this->toLowerCase(cmd_args.get(1));
+    if (fmt == "pcapng") {
+      buffer_obj.setPcapng(true);
+      Serial.println(F("Capture format: pcapng"));
+    } else if (fmt == "pcap") {
+      buffer_obj.setPcapng(false);
+      Serial.println(F("Capture format: pcap"));
+    } else {
+      Serial.println(F("Usage: capformat <pcapng|pcap>"));
+    }
+    return;
+  }
+
   if (cmd_args.get(0) == STOPSCAN_CMD) {
     int f_arg = this->argSearch(&cmd_args, "-f");
     
