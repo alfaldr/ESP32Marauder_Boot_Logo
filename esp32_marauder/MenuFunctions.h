@@ -194,6 +194,7 @@ class MenuFunctions
     #endif
     Menu badusbMenu;
     Menu deviceMenu;
+Menu bootLogMenu;
 
     // Device menu stuff
     //Menu whichUpdateMenu;
@@ -379,7 +380,8 @@ class MenuFunctions
       void brightnessMode();
     #endif
     void main(uint32_t currentTime);
-    void RunSetup();
+    void buildBootLogMenu();
+void RunSetup();
     void orientDisplay();
 };
 

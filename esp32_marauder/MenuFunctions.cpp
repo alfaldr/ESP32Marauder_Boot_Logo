@@ -2,6 +2,7 @@
 #include "MenuMarquee.h"
 #include "CommandLine.h"
 #include "OwnedListLifecycle.h"
+#include "BootLog.h"
 #include "lang_var.h"
 
 #ifdef HAS_SCREEN
@@ -2042,6 +2043,35 @@ void MenuFunctions::buildBluetoothFoxHuntMenu() {
 }
 
 // Function to build the menus
+void MenuFunctions::buildBootLogMenu() {
+  char line[40];
+  const uint8_t entries = bootlog::count();
+  const uint8_t shown = entries < 8 ? entries : 8;
+
+  if (shown == 0) {
+    this->addNodes(&bootLogMenu, "No records", TFTLIGHTGREY, 0, [this]() {});
+  }
+
+  for (uint8_t index = 0; index < shown; ++index) {
+    const bool critical = bootlog::describeIsCritical(index);
+    bootlog::describe(index, line, sizeof(line));
+    char label[40];
+    snprintf(label, sizeof(label), "%s", line);
+    this->addNodes(&bootLogMenu, label, critical ? TFTRED : TFTWHITE, 0, [this]() {});
+  }
+
+  this->addNodes(&bootLogMenu, "Clear Log", TFTORANGE, 0, [this]() {
+    bootlog::clear();
+    this->buildBootLogMenu();
+    this->changeMenu(&bootLogMenu, true);
+  });
+
+  bootLogMenu.parentMenu = &deviceMenu;
+  this->addNodes(&bootLogMenu, text09, TFTLIGHTGREY, 0, [this]() {
+    this->changeMenu(bootLogMenu.parentMenu, true);
+  });
+}
+
 void MenuFunctions::RunSetup()
 {
   extern LinkedList<AccessPoint>* access_points;
@@ -2067,6 +2097,8 @@ void MenuFunctions::RunSetup()
   bluetoothMenu.list = new LinkedList<MenuNode>(); // Get list in third menu ready
 #endif
   deviceMenu.list = new LinkedList<MenuNode>();
+  bootLogMenu.list = new LinkedList<MenuNode>();
+  bootLogMenu.parentMenu = &deviceMenu;
   #ifdef HAS_GPS
     if (gps_obj.getGpsModuleStatus()) {
       gpsMenu.list = new LinkedList<MenuNode>();
@@ -3858,6 +3890,10 @@ void MenuFunctions::RunSetup()
     wifi_scan_obj.currentScanMode = SHOW_INFO;
     this->changeMenu(&infoMenu, true);
     wifi_scan_obj.RunInfo();
+  });
+  this->addNodes(&deviceMenu, "Boot Log", TFTORANGE, DEVICE_INFO, [this]() {
+    this->buildBootLogMenu();
+    this->changeMenu(&bootLogMenu, true);
   });
   this->addNodes(&deviceMenu, text08, TFTBLUE, SETTINGS, [this]() {
     this->changeMenu(&settingsMenu, true);

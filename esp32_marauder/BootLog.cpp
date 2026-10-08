@@ -21,6 +21,8 @@ constexpr const char *KEY_CLEAN = "clean";
 constexpr size_t EVENT_COUNT = 12;
 constexpr uint32_t HEARTBEAT_INTERVAL_MS = 10000;
 constexpr uint32_t SHORT_RUN_MS = 45000;   // bundan kisa calisma = ani sonlanma
+constexpr uint32_t UNATTENDED_RUN_MS = 120000;  // bunu asan oturumdan sonra guc
+                                             // kaybi "kimse yokken" sayilir
 constexpr uint32_t LOOP_THRESHOLD = 3;     // ustuste kisa acilis sayisi
 
 Event g_events[EVENT_COUNT];
@@ -55,9 +57,29 @@ bool isClean(uint32_t reason) {
   return reason == 1 || reason == 2 || reason == 3 || reason == 8;
 }
 
-// Gercekten sorun olan bitisler: cihazin kendi kendine kapandigi durumlar.
+// Gercek arza olan bitisler. Bunlar kirmizi gösterilir.
 bool isCritical(uint32_t reason) {
-  return !(reason == 1 || reason == 2 || reason == 3);
+  switch (reason) {
+    case 4:   // PANIC  - kod hatasi
+    case 5:   // INT_WDT
+    case 6:   // TASK_WDT - takilma
+    case 7:   // WDT
+    case 9:   // BROWNOUT - guc dususu
+    case 10:  // SDIO
+      return true;
+    default:
+      return false;
+  }
+}
+
+// Bu bitis, cihazin calisirken kendiliginden oldu mu, yoksa biri mi
+// dokundu? ESP_RST_POWERON hem BOOT tusuna basmayi hem de fisi cekmeyi
+// kapsar; ikisini ayirt etmek firmware icin mumkun degil. Tek ayirt
+// edebildigimiz sey, oturumun ne kadar surdugu:
+//   - kisa suren bir oturumdan sonra: biri kapatmis/resetlemis olma ihtimali yuksek
+//   - uzun suren bir oturumdan sonra: kimse yokken guc kesildi ihtimali yuksek
+bool looksUnattended(const Event &event) {
+  return event.reason == 1 && event.run_ms >= UNATTENDED_RUN_MS;
 }
 
 void formatDuration(char *out, size_t len, uint32_t ms) {
@@ -93,10 +115,23 @@ void buildNote() {
   char duration[16];
   formatDuration(duration, sizeof(duration), event.run_ms);
 
+  if (isCritical(event.reason)) {
+    snprintf(g_note, sizeof(g_note), "CRASH %s %s", reasonName(event.reason), duration);
+    g_critical = true;
+    return;
+  }
+
   switch (event.reason) {
-    case 1:  // guç giderildi / fiziksel reset: guc kaybi olabilir
+    case 1:   // guc kesildi veya fiziksel reset
     case 2:
-      snprintf(g_note, sizeof(g_note), "POWER LOSS %s", duration);
+      // Arada ayirt edemedigimiz durum. Uzun suren oturumdan sonra
+      // kimsenin basinda olmadigi bir guc kaybi olabilir; o zaman uyari.
+      if (looksUnattended(event)) {
+        snprintf(g_note, sizeof(g_note), "POWER LOST %s", duration);
+        g_critical = true;
+      } else {
+        snprintf(g_note, sizeof(g_note), "POWER CYCLE %s", duration);
+      }
       break;
     case 3:
       snprintf(g_note, sizeof(g_note), "REBOOT %s", duration);
@@ -105,8 +140,7 @@ void buildNote() {
       snprintf(g_note, sizeof(g_note), "SLEEP %s", duration);
       break;
     default:
-      snprintf(g_note, sizeof(g_note), "CRASH %s %s", reasonName(event.reason), duration);
-      g_critical = true;
+      snprintf(g_note, sizeof(g_note), "POWERON %s", duration);
       break;
   }
 }
@@ -236,6 +270,64 @@ const char *lastEvent() {
 
 bool lastEventIsCritical() {
   return g_critical;
+}
+
+uint8_t count() {
+  return static_cast<uint8_t>(g_count);
+}
+
+bool describe(uint8_t index, char *out, size_t len) {
+  if (index >= g_count || out == nullptr || len == 0) {
+    return false;
+  }
+
+  const Event &event = g_events[g_count - 1 - index];
+  char duration[16];
+  formatDuration(duration, sizeof(duration), event.run_ms);
+
+  const char *label = "POWER CYCLE";
+  bool critical = false;
+
+  if (isCritical(event.reason)) {
+    label = reasonName(event.reason);
+    critical = true;
+  } else {
+    switch (event.reason) {
+      case 1:
+      case 2:
+        if (looksUnattended(event)) {
+          label = "POWER LOST";
+          critical = true;
+        } else {
+          label = "POWER CYCLE";
+        }
+        break;
+      case 3:
+        label = "REBOOT";
+        break;
+      case 8:
+        label = "SLEEP";
+        break;
+      default:
+        label = "POWERON";
+        break;
+    }
+  }
+
+  snprintf(out, len, "#%u %s %s",
+           (unsigned)event.seq, label, duration);
+  return critical;
+}
+
+bool describeIsCritical(uint8_t index) {
+  if (index >= g_count) {
+    return false;
+  }
+  const Event &event = g_events[g_count - 1 - index];
+  if (isCritical(event.reason)) {
+    return true;
+  }
+  return looksUnattended(event);
 }
 
 void dumpToSerial() {

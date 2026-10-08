@@ -31,13 +31,18 @@ void init();
 void heartbeat();
 
 // Son kaydin kisa metnini dondurur. Ornek:
-//   "CRASH BROWNOUT 4m12s"   (guc dususu: en olası sebep)
-//   "CRASH PANIC 1m03s"      (kod hatasi)
-//   "CRASH TASK_WDT 45s"     (takilma)
-//   "POWER LOSS 3h07m"       (cihaz kendi kendine kapandi)
-//   "REBOOT 12s"             (bilerek yeniden baslatildi)
-//   "BOOT LOOP x3"           (arasi sirada kisa sureli acilislar)
-// Bos string ise sorun yok.
+//   CRASH BROWNOUT 4m12s   gercek arza: guc dususu (kirmizi)
+//   CRASH TASK_WDT 45s     takilma (kirmizi)
+//   POWER LOST 3h07m       uzun suren oturumdan sonra guc kesildi (kirmizi)
+//   POWER CYCLE 40s        kisa oturum sonrasi guc gitti: biri resetlemis
+//   REBOOT 12s             firmware'in kendi yeniden baslatmasi
+//   SLEEP 2m00m            derin uyku
+//   BOOT LOOP x3           arasi sirada kisa sureli acilislar (kirmizi)
+//
+// Not: ESP_RST_POWERON hem BOOT tusuna basmayi hem de fisi cekmeyi kapsar,
+// firmware bu ikisini ayirt edemez. Ayirt edilebilen tek sey oturum suresi:
+// kisa suren bir oturumdan sonra "POWER CYCLE", uzun surenden sonra
+// "POWER LOST" yazilir.
 const char *lastEvent();
 
 // Ekran rengi: son kayit anormal mi? (kirmizi goster)
@@ -45,6 +50,12 @@ bool lastEventIsCritical();
 
 // Tam gunlugu seri porta basar (USB'ye baglayinca calisir).
 void dumpToSerial();
+
+// Menude gostermek icin: kayit sayisi ve tek satirlik aciklama.
+// index 0 = en yeni kayit.
+uint8_t count();
+bool describe(uint8_t index, char *out, size_t len);
+bool describeIsCritical(uint8_t index);
 
 // Kaydi temizler (menu ekranindan "kaydi sil" ile cagrilabilir).
 void clear();
