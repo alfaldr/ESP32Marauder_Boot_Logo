@@ -257,12 +257,16 @@ void Display::drawBootSplash() {
   #endif
 
   // Renkli full-screen boot splash (BootSplashBitmap.h).
-  // ESP32'de PROGMEM bellek eslemeli flash oldugu icin dizi dogrudan
-  // isaretci uzerinden okunur; pushImage icin cast yeterlidir.
+  //
+  // Cast YAPILMAZ: BOOT_IMAGE const uint16_t PROGMEM[] oldugu icin TFT_eSPI'nin
+  // PROGMEM overload'ini (pushImage(..., const uint16_t*)) secmesi gerekir.
+  // O surum satirlari bir stack tamponuna kopyalayip oradan gonderir; cast
+  // edilmis surum ise flash isaretcisini dogrudan SPI DMA'ya verir ve DMA
+  // flash'tan okuyamadigi icin ekranda CRT benzeri bozuk renkler cikar.
   tft.fillScreen(TFT_BLACK);
   tft.pushImage(BOOT_IMAGE_X, BOOT_IMAGE_Y,
                 BOOT_IMAGE_WIDTH, BOOT_IMAGE_HEIGHT,
-                (uint16_t *)BOOT_IMAGE);
+                BOOT_IMAGE);
   tft.setTextWrap(false);
   tft.setFreeFont(NULL);
   tft.setTextSize(1);
