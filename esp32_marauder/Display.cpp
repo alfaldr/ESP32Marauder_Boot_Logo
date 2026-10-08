@@ -6,8 +6,9 @@
 
 #ifdef HAS_SCREEN
 
-// Boot ekraninda acilis gunlugu satirinin yerlesimi (gorselin alt bosligi).
-#define BOOT_LOG_Y 184
+// Boot ekraninda acilis gunlugu satirinin yerlesimi.
+// Ekranin en ustune koyulur: ortada logonun ve alttaki yazinin onune gecmesin.
+#define BOOT_LOG_Y 2
 
 Display::Display()
 #ifdef HAS_CYD_TOUCH
