@@ -6,7 +6,17 @@ on:
   push:
     branches:
       - custom-boot-splash
+      - baseline-check
   workflow_dispatch:
+    inputs:
+      variant:
+        description: "custom = renkli splash'li build, baseline = splash degisikligi geri alinmis saf upstream build"
+        required: false
+        type: choice
+        default: custom
+        options:
+          - custom
+          - baseline
 
 permissions:
   contents: read
@@ -19,6 +29,35 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # Baseline modu: renkli splash degisikliklerini geri al, boylece ayni
+      # pipeline ile saf upstream kodu derlenir ve boyut farki ayristirilir.
+      - name: Select variant
+        run: |
+          VARIANT="${{ inputs.variant }}"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "$GITHUB_REF_NAME" = "baseline-check" ]; then
+              VARIANT=baseline
+            else
+              VARIANT=custom
+            fi
+          fi
+          echo "VARIANT=$VARIANT" >> $GITHUB_ENV
+          echo "::notice::Varyant: $VARIANT (ref: $GITHUB_REF_NAME)"
+          if [ "$VARIANT" = "baseline" ]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              git checkout HEAD^ -- \
+                esp32_marauder/BootSplashBitmap.h \
+                esp32_marauder/Display.cpp \
+                esp32_marauder/configs.h
+              echo "::notice::Splash degisikligi HEAD^'den geri yuklendi"
+            else
+              echo "::notice::HEAD^ yok; agac zaten saf upstream"
+            fi
+            git --no-pager diff --stat
+          fi
 
       - name: Install Arduino CLI
         run: |
@@ -192,6 +231,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: marauder-cyd-2432S028
+          name: marauder-cyd-${{ env.VARIANT }}
           path: out/
           retention-days: 30
