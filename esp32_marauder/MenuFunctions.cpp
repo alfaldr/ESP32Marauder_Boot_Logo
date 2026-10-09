@@ -2073,6 +2073,110 @@ void MenuFunctions::buildBootLogMenu() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// On-device reference.
+//
+// Kept to one line per entry: the menu font is 6x8, so 52 characters fit, and
+// a short line keeps a whole topic on one screen where possible.
+// ---------------------------------------------------------------------------
+
+void MenuFunctions::addInfoNode(Menu *menu, const char *text, uint8_t color) {
+  this->addNodes(menu, text, color, 0, [this]() {});
+}
+
+void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
+  menu->parentMenu = parent;
+  this->addNodes(menu, text09, TFTLIGHTGREY, 0, [this, menu]() {
+    this->changeMenu(menu->parentMenu, true);
+  });
+}
+
+void MenuFunctions::buildHelpMenu() {
+  helpMenu.list->clear();
+
+  this->addNodes(&helpMenu, "WiFi Scans", TFTWHITE, SCANNERS, [this]() {
+    this->buildHelpScanMenu();
+    this->changeMenu(&helpScanMenu, true);
+  });
+  this->addNodes(&helpMenu, "Attacks", TFTWHITE, ATTACKS, [this]() {
+    this->buildHelpAttackMenu();
+    this->changeMenu(&helpAttackMenu, true);
+  });
+  this->addNodes(&helpMenu, "Capture a Handshake", TFTORANGE, EAPOL, [this]() {
+    this->buildHelpCaptureMenu();
+    this->changeMenu(&helpCaptureMenu, true);
+  });
+  this->addNodes(&helpMenu, "Terms", TFTWHITE, GENERAL_APPS, [this]() {
+    this->buildHelpTermsMenu();
+    this->changeMenu(&helpTermsMenu, true);
+  });
+
+  addBackNode(&helpMenu, &deviceMenu);
+}
+
+void MenuFunctions::buildHelpScanMenu() {
+  helpScanMenu.list->clear();
+
+  addInfoNode(&helpScanMenu, "scanap - list nearby APs", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "scansta - APs and their clients", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "scanall - every scan, one after another", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "chanact - frame count per channel", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "sniffraw - save every frame to file", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "All listen only. Nothing is sent.", TFTGREEN);
+
+  addBackNode(&helpScanMenu, &helpMenu);
+}
+
+void MenuFunctions::buildHelpAttackMenu() {
+  helpAttackMenu.list->clear();
+
+  addInfoNode(&helpAttackMenu, "deauth - kick clients off an AP", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  -s -d  target one client only", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "csa - flood channel switch notices", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "saecommit - WPA3 SAE commit", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "beacon - flood fake beacons", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "badmsg - malformed mgmt frames", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "quiet - probe, disrupt nothing", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "These transmit. Use on your own net.", TFTRED);
+
+  addBackNode(&helpAttackMenu, &helpMenu);
+}
+
+void MenuFunctions::buildHelpCaptureMenu() {
+  helpCaptureMenu.list->clear();
+
+  addInfoNode(&helpCaptureMenu, "1. WiFi > Scan APs", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "2. Note your AP's BSSID", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "3. WiFi > Scan EAPOL", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "4. Tap your AP to target it", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "5. Deauth is sent; client", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "   reconnects, handshake runs", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "6. 'Complete EAPOL' counts", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "   finished handshakes", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "7. File lands on the SD card", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "8. Every frame names its AP", TFTGREEN);
+
+  addBackNode(&helpCaptureMenu, &helpMenu);
+}
+
+void MenuFunctions::buildHelpTermsMenu() {
+  helpTermsMenu.list->clear();
+
+  addInfoNode(&helpTermsMenu, "EAPOL - 4-way key handshake, 802.1X", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "SAE - Simultaneous Auth. of Equals", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "PMKID - Pairwise Master Key ID", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "BSSID - the AP's hardware address", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "SSID - the network's name", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "promiscuous - hear all traffic,", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "   not just our own", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "deauth - a frame that forces a", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "   client to rejoin", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "pcapng - capture file, keeps notes", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "pcap - old format, for aircrack-ng", TFTLIGHTGREY);
+
+  addBackNode(&helpTermsMenu, &helpMenu);
+}
+
 void MenuFunctions::RunSetup()
 {
   extern LinkedList<AccessPoint>* access_points;
@@ -2100,6 +2204,11 @@ void MenuFunctions::RunSetup()
   deviceMenu.list = new LinkedList<MenuNode>();
   bootLogMenu.list = new LinkedList<MenuNode>();
   bootLogMenu.parentMenu = &deviceMenu;
+  helpMenu.list = new LinkedList<MenuNode>();
+  helpScanMenu.list = new LinkedList<MenuNode>();
+  helpAttackMenu.list = new LinkedList<MenuNode>();
+  helpCaptureMenu.list = new LinkedList<MenuNode>();
+  helpTermsMenu.list = new LinkedList<MenuNode>();
   #ifdef HAS_GPS
     if (gps_obj.getGpsModuleStatus()) {
       gpsMenu.list = new LinkedList<MenuNode>();
@@ -3895,6 +4004,10 @@ void MenuFunctions::RunSetup()
   this->addNodes(&deviceMenu, "Boot Log", TFTORANGE, DEVICE_INFO, [this]() {
     this->buildBootLogMenu();
     this->changeMenu(&bootLogMenu, true);
+  });
+  this->addNodes(&deviceMenu, "Quick Reference", TFTGREEN, GENERAL_APPS, [this]() {
+    this->buildHelpMenu();
+    this->changeMenu(&helpMenu, true);
   });
   this->addNodes(&deviceMenu, text08, TFTBLUE, SETTINGS, [this]() {
     this->changeMenu(&settingsMenu, true);

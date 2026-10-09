@@ -195,6 +195,13 @@ class MenuFunctions
     Menu badusbMenu;
     Menu deviceMenu;
 Menu bootLogMenu;
+    // On-device reference. One page per topic, each entry a single line so the
+    // whole thing stays readable at the menu's 6x8 font without scrolling far.
+    Menu helpMenu;
+    Menu helpScanMenu;
+    Menu helpAttackMenu;
+    Menu helpCaptureMenu;
+    Menu helpTermsMenu;
 
     // Device menu stuff
     //Menu whichUpdateMenu;
@@ -381,6 +388,14 @@ Menu bootLogMenu;
     #endif
     void main(uint32_t currentTime);
     void buildBootLogMenu();
+  void buildHelpMenu();
+  void buildHelpScanMenu();
+  void buildHelpAttackMenu();
+  void buildHelpCaptureMenu();
+  void buildHelpTermsMenu();
+  // Reference helpers. addNodes() is private, so these have to be members.
+  void addInfoNode(Menu* menu, const char* text, uint8_t color);
+  void addBackNode(Menu* menu, Menu* parent);
 void RunSetup();
     void orientDisplay();
 };
