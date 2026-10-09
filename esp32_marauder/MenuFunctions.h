@@ -405,6 +405,12 @@ Menu bootLogMenu;
   void addRowLines(Menu* menu, HelpId base, uint8_t color, int icon);
   void addMode(Menu* menu, HelpId name, HelpId what, HelpId when,
               HelpId path, bool show_path, int category);
+  // Escape hatch for the reference: a close box in the top-left of the status
+  // bar, so a long page can be left without scrolling to the back entry at
+  // the bottom. Only drawn and only tappable while inside the reference.
+  bool inHelpSection() const;
+  void drawHelpClose();
+  bool helpCloseHit(int16_t tx, int16_t ty) const;
 void RunSetup();
     void orientDisplay();
 };
