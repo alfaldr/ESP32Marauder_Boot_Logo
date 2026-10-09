@@ -10544,25 +10544,20 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
       wifi_scan_obj.deauth_frame_default[20] = snifferPacket->payload[14];
       wifi_scan_obj.deauth_frame_default[21] = snifferPacket->payload[15];      
     
-      // Send packet
-      //
-      // The return value used to be discarded, so "DEAUTH TX: TRUE" on screen
-      // only ever meant the flag was set, never that a frame left the radio.
-      // esp_wifi_80211_tx returns ESP_ERR_NO_MEM when the TX buffer is full,
-      // which is exactly what happens when the sniffer callback is running hot
-      // and the SD write is keeping up: every call can fail silently and the
-      // capture still looks healthy. Counting both outcomes makes the claim
-      // checkable rather than assumed.
-      for (int i = 0; i < 5; i++) {
-        if (esp_wifi_80211_tx(WIFI_IF_AP, wifi_scan_obj.deauth_frame_default,
-                              sizeof(wifi_scan_obj.deauth_frame_default),
-                              false) == ESP_OK) {
-          wifi_scan_obj.deauth_tx_ok++;
-        } else {
-          wifi_scan_obj.deauth_tx_failed++;
-        }
+      // Send packet. One frame, as the original did. Sending five per beacon
+      // was an unmeasured change that made things worse, not better: the TX
+      // buffer is shared with the beacon stream, so the extra copies came back
+      // as ESP_ERR_NO_MEM and the success rate fell from 83% to 3% while the
+      // capture ran. The return value is still checked, which the original
+      // discarded, so the counter now measures what the flag claimed.
+      if (esp_wifi_80211_tx(WIFI_IF_AP, wifi_scan_obj.deauth_frame_default,
+                            sizeof(wifi_scan_obj.deauth_frame_default),
+                            false) == ESP_OK) {
+        wifi_scan_obj.deauth_tx_ok++;
+      } else {
+        wifi_scan_obj.deauth_tx_failed++;
       }
-      wifi_scan_obj.deauth_tx_events++;   // beacons that triggered a burst
+      wifi_scan_obj.deauth_tx_events++;   // beacons that triggered a send
       delay(1);
     }
 

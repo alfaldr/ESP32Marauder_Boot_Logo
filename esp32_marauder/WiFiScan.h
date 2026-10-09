@@ -992,7 +992,7 @@ class WiFiScan
 // working transmitter from a flag that was merely set.
 uint32_t deauth_tx_ok = 0;
 uint32_t deauth_tx_failed = 0;
-uint32_t deauth_tx_events = 0;  // beacons that triggered a burst of five
+uint32_t deauth_tx_events = 0;  // beacons that triggered a send
     uint32_t eapol_frames = 0;
     uint32_t complete_eapol = 0;
     uint32_t flock_devices = 0;
