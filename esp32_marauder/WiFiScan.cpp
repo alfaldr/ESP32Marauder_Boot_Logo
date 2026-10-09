@@ -10650,7 +10650,10 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
           // file being written instead of the device's whole uptime.
           if (!temp_ap.has_msg_4 && temp_ap.has_msg_1 && temp_ap.has_msg_2 &&
               temp_ap.has_msg_3) {
-            eapol_file_count++;
+            // The sniffer callback is static, so there is no `this`. Every
+            // other counter it touches goes through the global instance for
+            // the same reason.
+            wifi_scan_obj.eapol_file_count++;
           }
           temp_ap.has_msg_4 = true;
           access_points->set(ap_index, temp_ap);
