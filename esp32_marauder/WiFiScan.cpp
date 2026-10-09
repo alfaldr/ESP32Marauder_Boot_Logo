@@ -10411,6 +10411,35 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
     const wifi_ieee80211_packet_t *ipkt = (wifi_ieee80211_packet_t *)snifferPacket->payload;
     const WifiMgmtHdr *hdr = &ipkt->hdr;
 
+    // DIAGNOSIS: heap level, sampled on every management frame.
+    //
+    // This sat on the new-AP path only, which is why it never fired during the
+    // crash: the AP list stops growing early, so the one place that could
+    // report a shrinking heap is rarely reached. Moving it here means it is
+    // sampled on the frames that actually arrive, tens of times a second.
+    //
+    // 40 KB is the threshold rather than the original 8 KB because the heap
+    // never got that low before the crash -- the churn that caused it stayed
+    // above the floor while fragmentation was already the problem, which
+    // largest_free_block shows and a raw free total hides. Reporting only on a
+    // 25% drop bounds it to a handful of lines per capture: printing per frame
+    // from the sniffer callback changes the timing of what is measured.
+    static uint32_t low_heap_reported = 0;
+    const uint32_t free8 = (uint32_t)heap_caps_get_free_size(
+        MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (free8 < 40960) {
+      if (low_heap_reported == 0 || free8 < low_heap_reported * 3 / 4) {
+        Serial.printf("[diag] LOW HEAP free=%u largest=%u aps=%d\n",
+                      (unsigned)free8,
+                      (unsigned)heap_caps_get_largest_free_block(
+                          MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                      access_points->size());
+        low_heap_reported = free8;
+      }
+    } else {
+      low_heap_reported = 0;
+    }
+
     // Do our counts
     if (snifferPacket->payload[0] == 0x40) { // Probe request
       wifi_scan_obj.req_frames++;
@@ -10429,33 +10458,6 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
         if (!wifi_scan_obj.checkMem(
                 sizeof(AccessPoint) + sizeof(LinkedList<uint16_t>) + 128))
           return;
-
-        // DIAGNOSIS: checkMem() measures the struct plus a 128 byte reserve,
-        // but every String in here -- essid, bssid_mac, the comment built
-        // further down -- allocates separately through malloc, and each
-        // AccessPoint copy in the beacon path allocates two more. The reserve
-        // can therefore look comfortable while the 8-bit internal heap that
-        // String actually draws from is nearly empty. This is the only place
-        // a new AP is created, so a low reading here explains a later crash in
-        // String::copy without having to catch the crash itself.
-        //
-        // The latch keeps it to one line per depletion event: a sniffer that
-        // prints every beacon would flood the port and change the timing.
-        static uint32_t low_heap_reported = 0;
-        const uint32_t free8 = (uint32_t)heap_caps_get_free_size(
-            MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-        if (free8 < 8192) {
-          if (low_heap_reported == 0 || free8 < low_heap_reported / 2) {
-            Serial.printf("[diag] LOW HEAP free=%u largest=%u aps=%d\n",
-                          (unsigned)free8,
-                          (unsigned)heap_caps_get_largest_free_block(
-                              MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
-                          access_points->size());
-            low_heap_reported = free8;
-          }
-        } else {
-          low_heap_reported = 0;
-        }
 
         if (snifferPacket->payload[37] > 0) {
           for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
@@ -10484,7 +10486,6 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
         ap.has_msg_2 = false;
         ap.has_msg_3 = false;
         ap.has_msg_4 = false;
-        ap.beacon_saved = false;
         ap.beacon[0] = snifferPacket->payload[34];
         ap.beacon[1] = snifferPacket->payload[35];
         ap.sec = security_type;
@@ -10644,11 +10645,24 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
     }
   }
 
-  // Only the first beacon per AP reaches the capture buffer. Beacons arrive
-  // roughly ten times a second and would consume the whole buffer before a
-  // client ever reassociates, dropping the very EAPOL frames we are after.
-  // aircrack-ng only needs one beacon per network for the ESSID and sequence
-  // numbers, so nothing is lost.
+  // Beacons are no longer rate limited here. There used to be a beacon_saved
+  // flag on the AccessPoint, so only the first beacon per AP was written. That
+  // needed a read-modify-write on the list entry:
+  //
+  //   AccessPoint ap = access_points->get(ap_index);   // heap String copy
+  //   ap.beacon_saved = true;
+  //   access_points->set(ap_index, ap);               // second heap String copy
+  //
+  // AccessPoint::essid is an Arduino String, and String does not reference
+  // count, so every one of those copies is a separate malloc. With ChanHop on
+  // and EAPOL running, beacons arrive tens of times a second, and that churn is
+  // what crashed the device: LoadProhibited, EXCCAUSE 0x1c, EXCVADDR 0x0f,
+  // backtrace through LinkedList::set -> AccessPoint::operator= ->
+  // String::copy, about eight minutes in. Removing the flag removes the churn.
+  //
+  // The cost is file size. Buffers are flushed often and the append path
+  // already drops frames once full, which the Dropped counter reports, so a
+  // busier file is the right trade against a crash that ends the capture.
   bool save_frame = false;
   String comment;
 
@@ -10683,51 +10697,24 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
                                                       MALLOC_CAP_8BIT));
     }
     save_frame = true;
-  } else if (is_beacon && ap_index >= 0) {
-    AccessPoint ap = access_points->get(ap_index);
-    if (!ap.beacon_saved) {
-      ap.beacon_saved = true;
-
-      // ---- DIAGNOSIS: why this crashes -------------------------------
-      //
-      // A real crash landed here. LoadProhibited, EXCCAUSE 0x1c,
-      // EXCVADDR 0x0f, with the backtrace running
-      //   eapolSnifferCallback -> LinkedList::set -> AccessPoint::operator=
-      //   -> String::operator= -> String::copy
-      // in eight minutes of EAPOL with ForcePMKID on.
-      //
-      // Two causes fit that address, and they need different fixes:
-      //   (a) a String allocation failed, leaving essid pointing nowhere;
-      //   (b) ap_index was valid where it was computed and stale by the time
-      //       set() was reached, so set() writes through a bad pointer.
-      //
-      // Nothing here prints per frame: the sniffer runs in the WiFi task and a
-      // Serial.print per beacon would change the timing of the very thing being
-      // diagnosed. Only the case that is about to crash says anything.
-      //
-      // heap_caps_get_free_size is the number that matters, because String
-      // uses malloc, which takes from the internal 8-bit capable heap rather
-      // than the general pool the memory guard measures.
-      if (access_points->size() <= 0 || ap_index >= access_points->size()) {
-        Serial.printf("[diag] STALE INDEX idx=%d size=%d essid_len=%u "
-                      "free=%u largest=%u\n",
-                      ap_index, access_points->size(),
-                      (unsigned)ap.essid.length(),
-                      (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL |
-                                                        MALLOC_CAP_8BIT),
-                      (unsigned)heap_caps_get_largest_free_block(
-                          MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-        // Skip the write. If this is the cause, the crash stops here and the
-        // beacon is simply not saved, which is a far better outcome than a
-        // reboot 8 minutes into a capture.
-      } else {
-        access_points->set(ap_index, ap);
+  } else if (is_beacon) {
+    // No list access on this path, which is the whole point: the crash was
+    // reached through access_points->get/set, not through the buffer.
+    //
+    // The ESSID comes from the frame itself rather than from the AccessPoint
+    // entry. Reading it from the list meant another get, and with the flag
+    // gone there was nothing left to justify the lookup. The frame already
+    // carries the name at offset 38, length at 37, so this is free and it
+    // keeps beacon comments identifying the network the way EAPOL ones do.
+    comment = "BEACON bssid=" + bssid;
+    if (snifferPacket->payload[37] > 0) {
+      comment += " ssid=";
+      const int ssid_len = SSID_LEN(snifferPacket, len);
+      for (int i = 0; i < ssid_len; i++) {
+        comment += (char)snifferPacket->payload[i + 38];
       }
-      // ---- END DIAGNOSIS ----------------------------------------------
-
-      comment = "BEACON bssid=" + bssid + " ssid=" + ap.essid;
-      save_frame = true;
     }
+    save_frame = true;
   }
 
   if (save_frame) {

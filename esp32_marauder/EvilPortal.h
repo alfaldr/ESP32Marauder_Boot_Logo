@@ -69,10 +69,11 @@ struct AccessPoint {
   bool has_msg_2;
   bool has_msg_3;
   bool has_msg_4;
-  // Set once this AP's beacon has been written to the capture buffer. A beacon
-  // arrives ~10x/second and would otherwise fill the write buffer before a
-  // single EAPOL frame lands; one beacon per AP is enough for aircrack-ng.
-  bool beacon_saved;
+  // beacon_saved used to live here, limiting the capture to one beacon per AP.
+  // Setting it required a get/modify/set on this entry, and since essid is an
+  // Arduino String -- which does not reference count -- every one of those was
+  // two separate heap allocations, on a path that runs tens of times a second.
+  // That churn is what crashed EAPOL mode with ChanHop enabled.
   uint32_t last_seen_ms;
 };
 
