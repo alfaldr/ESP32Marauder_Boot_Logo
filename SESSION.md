@@ -71,9 +71,12 @@ yazildi ve dogrulandi. Icerir:
    `send_deauth` yalnizca `WIFI_SCAN_ACTIVE_EAPOL` / `ACTIVE_LIST_EAPOL` veya
    `ForcePMKID` ayarinda acik. Menuden aktif baslatmanin yolu **yok**; sadece
    CLI'da `sniffpmkid -d` var. Menuye aktif bir girdi eklenmesi mantikli.
-3. **Turkce glifler yok.** Font `0x20..0x7E` ile sinirli, Turkce katalog ASCII'ye
-   uyarlanmis (`Koklayicilar`, `BSSID'i`). Gercek Turkce icin 8 glifli ozel
-   font uretilmesi gerekir.
+3. ~~Turkce glifler~~ **Kapatildi: kullanici Turkce karakterden vazgecsti**
+   (2026-10-09). Katalog ASCII'de kalir: `Koklayicilar`, `BSSID'i`,
+   `Saldirilar`. Ozel font uretme denemesi yapilmadi. Tek istisna olarak
+   dosya icerigi etkilenmez: yakalanan ag adlari yorumlara ham bayt olarak
+   yazildigi icin SSID'ler Turkce karakterleri kayipsiz tasir
+   (orn. `Saygılarr`), yalnizca ekran cizimi kisitli.
 4. Quick Reference sayfalama (`1/2 dokun: ileri`) kullanici tarafindan
    dogrulanmadi.
 5. Iptal edilenler: `[x]` butonu, Boot Log metin ekranina cevirme.
@@ -81,7 +84,11 @@ yazildi ve dogrulandi. Icerir:
 ## Kalici tuslaklar
 
 - Ekran metinleri **ASCII olmali**; aksi halde TFT_eSPI glif tablosunu sinir
-  kontrolu olmadan indeksliyor (bkz. `tools/check_ascii_strings.py`)
+  kontrolu olmadan indeksliyor (bkz. `tools/check_ascii_strings.py`). Artik
+  kural degil, karar: Turkce glif uretmek denendi ve birakildi, donanim
+  fontunda Turkce karakter yok ve eklemek icin ozel font gerekiyor
+- **Yerelde C++ derlenemiyor** (toolchain yok). Derleme dogrulamasi yalnizca
+  CI; makro arityasi gibi hatalar ancak orada yakalaniyor
 - `lang/` altindaki kaynaklar **header-only**; sketch derleyicisi alt klasordeki
   `.cpp` dosyalarini derlemiyor
 - Cataloglari elle degistirme: `lang/help.*.txt` -> `python lang/gen_help.py`
