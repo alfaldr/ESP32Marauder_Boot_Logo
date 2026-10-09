@@ -370,11 +370,20 @@ void MenuFunctions::main(uint32_t currentTime)
   // returns immediately.
   #ifdef HAS_ILI9341
     if (pressed && this->help_text_active) {
-      this->help_text_active = false;
-      this->buildHelpMenu();
-      this->changeMenu(&helpMenu, true);
       x = -1;
       y = -1;
+      // Turn the page; only the tap after the last one returns to the
+      // index. Returning immediately made the longer sections
+      // unreachable, since nothing could show what was below the fold.
+      if (help_page + 1 < help_pages) {
+        help_page++;
+        this->help_section_show();
+      } else {
+        this->help_text_active = false;
+        this->help_section_show = nullptr;
+        this->buildHelpMenu();
+        this->changeMenu(&helpMenu, true);
+      }
       return;
     }
   #endif
@@ -2119,45 +2128,74 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   void MenuFunctions::drawHelpSection(const HelpId *ids, uint8_t count) {
+    // Flatten the catalogue into rows first. Doing it this way means the page
+    // count is derived from exactly the rows that get drawn, so a page can
+    // never claim to have more content than it shows, and no assumption about
+    // how many pixels a line occupies can silently drop entries: whatever does
+    // not fit becomes another page.
+    static const char *rows[HELP_MAX_ROWS];
+    uint8_t n = 0;
+
+    uint8_t last = count;
+    while (last > 0 && ids[last - 1] == HELP_ID_MAX) {
+      last--;   // a separator after the final entry separates nothing
+    }
+
+    for (uint8_t i = 0; i < last && n < HELP_MAX_ROWS; i++) {
+      if (ids[i] == HELP_ID_MAX) {
+        rows[n++] = nullptr;
+        continue;
+      }
+      const char *lines[4];
+      const uint8_t k = helpLines(ids[i], lines, 4);
+      for (uint8_t j = 0; j < k && n < HELP_MAX_ROWS; j++) {
+        rows[n++] = lines[j];
+      }
+    }
+
+    // One row is reserved at the bottom for the page indicator.
+    help_pages = (uint8_t)((n + HELP_ROWS_PER_PAGE - 1) / HELP_ROWS_PER_PAGE);
+    if (help_pages == 0) help_pages = 1;
+    if (help_page >= help_pages) help_page = (int16_t)help_pages - 1;
+
     display_obj.tft.fillScreen(TFT_BLACK);
     display_obj.tft.setTextWrap(false);
     display_obj.tft.setFreeFont(NULL);
     display_obj.tft.setTextSize(1);
     display_obj.tft.setTextColor(TFT_WHITE);
 
-    // Every 8 pixels from just under the status bar to the bezel: 37 rows on
-    // the 240x320 panel. The first cut of this started six pixels lower and
-    // stopped ten short of the bottom, which silently dropped the last entry
-    // of the sniffers section. check_help_fits.py mirrors these numbers.
-    int16_t y = STATUS_BAR_WIDTH + 2;
-    const int16_t limit = SCREEN_HEIGHT - 2 - 8;
-
-    // A separator after the final entry separates nothing, and spending a row
-    // on it is what pushed the sniffers page over the edge.
-    uint8_t last = count;
-    while (last > 0 && ids[last - 1] == HELP_ID_MAX) {
-      last--;
-    }
-
-    for (uint8_t i = 0; i < last; i++) {
-      if (ids[i] == HELP_ID_MAX) {
-        y += 8;
+    int16_t y = HELP_TOP_Y;
+    const uint16_t first = help_page * HELP_ROWS_PER_PAGE;
+    const uint16_t limit = (uint16_t)(first + HELP_ROWS_PER_PAGE);
+    for (uint16_t r = first; r < n && r < limit; r++) {
+      display_obj.tft.setCursor(0, y);
+      if (rows[r] == nullptr) {
+        y += HELP_LINE_PX;
         continue;
       }
-      const char *lines[4];
-      const uint8_t n = helpLines(ids[i], lines, 4);
-      for (uint8_t j = 0; j < n; j++) {
-        if (y > limit) {
-          display_obj.tft.setCursor(0, y);
-          display_obj.tft.setTextColor(TFT_ORANGE);
-          display_obj.tft.println(F("(devami icin asagi kaydirin)"));
-          return;
-        }
-        display_obj.tft.setCursor(0, y);
-        display_obj.tft.println(lines[j]);
-        y += 8;
-      }
+      display_obj.tft.println(rows[r]);
+      y += HELP_LINE_PX;
     }
+
+    // Footer: where you are, and what a tap does next. Without this a tap
+    // that advances the page looks like the touch did nothing.
+    char footer[32];
+    if (help_pages > 1) {
+      snprintf(footer, sizeof(footer), "%d/%d  dokun: ileri", (int)help_page + 1,
+               (int)help_pages);
+    } else {
+      snprintf(footer, sizeof(footer), "dokun: geri");
+    }
+    display_obj.tft.setTextColor(TFT_ORANGE);
+    display_obj.tft.setCursor(0, HELP_FOOTER_Y);
+    display_obj.tft.println(footer);
+  }
+
+  // Entering a section always starts at the first page.
+  void MenuFunctions::showHelpPage(void (*section)()) {
+    help_page = 0;
+    help_section_show = section;
+    section();
   }
 
   // A mode: name, what it does, when to reach for it.
@@ -2229,23 +2267,23 @@ void MenuFunctions::buildBootLogMenu() {
     });
     this->addNodes(&helpMenu, helpText(H_SNIFFERS_TITLE), TFTWHITE, SNIFFERS, [this]() {
       this->help_text_active = true;
-      this->showHelpSniffers();
+      this->showHelpPage(&MenuFunctions::showHelpSniffers);
     });
     this->addNodes(&helpMenu, helpText(H_ATTACKS_TITLE), TFTWHITE, ATTACKS, [this]() {
       this->help_text_active = true;
-      this->showHelpAttacks();
+      this->showHelpPage(&MenuFunctions::showHelpAttacks);
     });
     this->addNodes(&helpMenu, helpText(H_SCANNERS_TITLE), TFTWHITE, SCANNERS, [this]() {
       this->help_text_active = true;
-      this->showHelpScanners();
+      this->showHelpPage(&MenuFunctions::showHelpScanners);
     });
     this->addNodes(&helpMenu, helpText(H_CAPTURE_TITLE), TFTORANGE, EAPOL, [this]() {
       this->help_text_active = true;
-      this->showHelpCapture();
+      this->showHelpPage(&MenuFunctions::showHelpCapture);
     });
     this->addNodes(&helpMenu, helpText(H_TERMS_TITLE), TFTWHITE, GENERAL_APPS, [this]() {
       this->help_text_active = true;
-      this->showHelpTerms();
+      this->showHelpPage(&MenuFunctions::showHelpTerms);
     });
 
     addBackNode(&helpMenu, &deviceMenu);

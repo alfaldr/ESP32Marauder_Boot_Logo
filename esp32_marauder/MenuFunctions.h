@@ -406,7 +406,29 @@ Menu bootLogMenu;
 
   // True while a section text screen is up, so a tap returns to the index
   // instead of being read as a menu selection.
+  // Reference text screen paging.
+  //
+  // The panel holds 37 rows at 8 pixels and the sniffers page wants 36,
+  // which fits on paper but not on the device: the real line advance was
+  // larger than assumed, so the last entries fell off the bottom. Rather
+  // than trust the arithmetic, the renderer flattens the catalogue into
+  // rows, pages whatever does not fit, and reports the count, so anything
+  // that overflows becomes another page instead of disappearing.
+  //
+  // One row is held back for the indicator, which also says what the next
+  // tap does, since a tap that turns a page would otherwise look ignored.
+  static constexpr int16_t HELP_LINE_PX = 8;
+  static constexpr int16_t HELP_TOP_Y = 22;
+  static constexpr int16_t HELP_FOOTER_Y = 312;
+  static constexpr uint8_t HELP_ROWS_PER_PAGE = 35;
+  static constexpr uint8_t HELP_MAX_ROWS = 80;
+
+  void showHelpPage(void (*section)());
+
   bool help_text_active = false;
+  void (*help_section_show)() = nullptr;
+  int16_t help_page = 0;
+  uint8_t help_pages = 1;
   void addBackNode(Menu* menu, Menu* parent);
   // Escape hatch for the reference: a close box in the top-left of the status
   // bar, so a long page can be left without scrolling to the back entry at
