@@ -2111,6 +2111,13 @@ void MenuFunctions::buildBootLogMenu() {
   // colour argument, and drawing straight to the panel for it was not worth the
   // extra code when a blank line separates entries just as well.
 
+  void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
+    menu->parentMenu = parent;
+    this->addNodes(menu, text09, TFTLIGHTGREY, 0, [this, menu]() {
+      this->changeMenu(menu->parentMenu, true);
+    });
+  }
+
   void MenuFunctions::drawHelpSection(const HelpId *ids, uint8_t count) {
     display_obj.tft.fillScreen(TFT_BLACK);
     display_obj.tft.setTextWrap(false);
