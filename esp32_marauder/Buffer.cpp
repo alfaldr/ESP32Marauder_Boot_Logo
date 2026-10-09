@@ -114,14 +114,21 @@ void Buffer::add(const uint8_t* buf, uint32_t len, bool is_pcap, const char* com
   else if (comment_len == 0) comment_len = strlen(comment);
   if (comment_len > marauder::kMaxPacketComment) comment_len = marauder::kMaxPacketComment;
 
-  // Total bytes this frame occupies, container header included. The original
-  // check only counted the payload, so a frame that just fitted could still
-  // write its header past the end of the buffer.
-  size_t overhead = 0;
-  if (is_pcap) {
-    overhead = pcapng ? marauder::packetBlockSize(len, comment_len) : 16u;
-  }
-  const size_t footprint = len + overhead;
+    // Bytes this frame occupies, container header included. The original
+    // check only counted the payload, so a frame that just fitted could
+    // still write its header past the end of the buffer.
+    //
+    // packetBlockSize() already covers the payload: it counts pad4(len),
+    // not len. Adding len on top therefore counted every frame twice and
+    // made the buffer give up earlier than it had to. Classic pcap adds a
+    // 16 byte record header on top of the payload; a plain log has none.
+    size_t footprint;
+    if (is_pcap) {
+      footprint = pcapng ? marauder::packetBlockSize(len, comment_len)
+                         : 16u + len;
+    } else {
+      footprint = len;
+    }
 
   if (footprint > BUF_SIZE) { dropped_frames++; return; }
 

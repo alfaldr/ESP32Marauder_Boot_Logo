@@ -172,13 +172,17 @@ size_t makePacketBlockHeader(uint8_t* output, size_t capacity,
 
 size_t makePacketBlockFooter(uint8_t* output, size_t capacity, size_t total,
                              const char* comment, size_t comment_length) {
+  // `output` is the tail buffer, not the start of the block: the caller writes
+  // the payload in between, so it cannot hold a whole block. An earlier
+  // version indexed this at total - tail as if it did, which put a 60 byte
+  // write at offset 228 inside a 104 byte stack buffer. That smashed the
+  // stack of the WiFi receive callback on the first captured EAPOL frame,
+  // which is what the device kept panicking on.
   const size_t tail = packetBlockFooterSize(comment_length);
   if (capacity < tail) return 0;
-  if (total < tail) return 0;
 
-  uint8_t* body = output + total - tail;
-  writeOptionList(body, comment, comment_length);
-  writeLittleEndian32(static_cast<uint32_t>(total), output + total - 4);
+  writeOptionList(output, comment, comment_length);
+  writeLittleEndian32(static_cast<uint32_t>(total), output + tail - 4);
   return tail;
 }
 
