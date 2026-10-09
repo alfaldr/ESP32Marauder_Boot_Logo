@@ -7,26 +7,27 @@
 // Help catalogue.
 //
 // The menu clips a node label wider than KEY_W - 2*BUTTON_PADDING and scrolls
-// it sideways. On the CYD that is 240 - 44 = 196 px, and FreeMono9pt7b advances
-// about 11 px per character, so 18 characters already triggers the marquee.
-// Since the menu is scrolled vertically anyway, a sideways scrolling label is
-// unpleasant, so every string is wrapped to HELP_LINE_MAX at build time
-// instead of at runtime.
+// it sideways. On the CYD that is 240 - 44 = 196 px, and the menu font
+// (FreeSans9pt7b) advances about 10 px per lowercase glyph, so anything past
+// that scrolls. The menu is scrolled vertically anyway, so a sideways
+// scrolling label is unpleasant to read, and every string is therefore wrapped
+// to the button's pixel width at build time instead of at runtime.
 //
-// The catalogue lives in lang/help.<lang>.txt and is compiled into
-// HelpLang_gen.{h,cpp} by lang/gen_help.py. Translators edit the text files
-// only; they never touch code. Adding a language is one new .txt file plus one
-// entry in gen_help.py's LANGS map.
+// Everything here is header-only and inline. The Arduino sketch builder does
+// not reliably compile .cpp sources in subfolders, and a header has no such
+// dependency: one definition however many translation units include it.
 //
-// The font is ASCII-only, so Turkish and similar need a plain transliteration
-// ('i' for 'ı', 's' for 'ş', ...). The generator rejects non-ASCII outright so
-// a stray accented character cannot turn into boxes on the device.
+// The catalogue itself lives in lang/help.<lang>.txt and is compiled into
+// HelpLang_gen.h by lang/gen_help.py. Translators edit the text files only;
+// they never touch code. Adding a language is one .txt file plus one entry in
+// the generator's LANGS map.
+//
+// The font has no glyphs above 127, so Turkish needs a plain transliteration
+// ('i' for dotless i, 's' for s-cedilla, and so on). The generator rejects
+// non-ASCII outright so an accented character cannot turn into boxes on the
+// device unnoticed. Proper Turkish would mean generating a font carrying those
+// eight glyphs.
 // ---------------------------------------------------------------------------
-
-#define HELP_LINE_MAX 17
-
-// Text lives in flash, so it must be read through pgm_read_ptr.
-#define HELP_FMT(line) (reinterpret_cast<const char *>(pgm_read_ptr(line)))
 
 enum HelpLang : uint8_t {
   LANG_EN = 0,
@@ -34,19 +35,25 @@ enum HelpLang : uint8_t {
   LANG_COUNT,
 };
 
-// HelpId is generated; see HelpLang_gen.h.
+// Not persisted on purpose: a reference text is not worth a settings
+// migration, and a wrong guess after a firmware update would be more confusing
+// than falling back to English. Pick the language from the reference index.
+inline HelpLang g_help_lang = LANG_EN;
+
+inline void helpSetLang(HelpLang lang) {
+  if (lang < LANG_COUNT) g_help_lang = lang;
+}
+
+inline HelpLang helpGetLang() { return g_help_lang; }
+
+// Endonym, so a language is readable whatever the current locale is.
+inline const char *helpLangLabel(HelpLang lang) {
+  switch (lang) {
+    case LANG_TR: return "Turkce";
+    case LANG_EN:
+    default: return "English";
+  }
+}
+
+// HelpId, helpText() and helpLines() come from the generated header.
 #include "HelpLang_gen.h"
-
-// One wrapped line, in flash. Never nullptr.
-const char *helpText(HelpId id);
-
-// Every line of the field starting at `base`, in order. Continuation ids are
-// allocated contiguously, so this walks forward and stops at the first empty
-// one. Returns how many were written, capped at `max`.
-uint8_t helpLines(HelpId base, const char **out, uint8_t max);
-
-void helpSetLang(HelpLang lang);
-HelpLang helpGetLang();
-
-// Endonym, so the language is readable whatever the current locale is.
-const char *helpLangLabel(HelpLang lang);

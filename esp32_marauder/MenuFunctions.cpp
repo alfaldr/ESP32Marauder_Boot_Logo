@@ -2102,6 +2102,13 @@ void MenuFunctions::buildBootLogMenu() {
   // private, and note that its fourth argument is the icon: a literal 0 is
   // ATTACKS, not "no icon".
 
+  void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
+    menu->parentMenu = parent;
+    this->addNodes(menu, text09, TFTLIGHTGREY, 0, [this, menu]() {
+      this->changeMenu(menu->parentMenu, true);
+    });
+  }
+
   void MenuFunctions::addRow(Menu *menu, HelpId id, uint8_t color, int icon) {
     this->addNodes(menu, helpText(id), color, icon, []() {});
   }

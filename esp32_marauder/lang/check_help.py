@@ -23,7 +23,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 GEN_H = os.path.join(HERE, "HelpLang_gen.h")
-GEN_CPP = os.path.join(HERE, "HelpLang_gen.cpp")
+
 MENU = os.path.join(ROOT, "MenuFunctions.cpp")
 
 sys.path.insert(0, HERE)
@@ -41,19 +41,19 @@ def main():
     # 1. Regenerate into a scratch copy and diff, so an uncommitted catalog
     #    edit cannot slip through with stale generated code.
     with tempfile.TemporaryDirectory() as tmp:
-        for name in ("HelpLang_gen.h", "HelpLang_gen.cpp"):
+        for name in ("HelpLang_gen.h",):
             shutil_copy = os.path.join(tmp, name)
             with open(shutil_copy, "w", encoding="utf-8") as fh:
                 fh.write("")
             os.remove(shutil_copy)
         saved = {}
-        for path in (GEN_H, GEN_CPP):
+        for path in (GEN_H,):
             saved[path] = read(path)
         try:
             subprocess.check_call([sys.executable,
                                    os.path.join(HERE, "gen_help.py")],
                                   stdout=subprocess.DEVNULL)
-            for path in (GEN_H, GEN_CPP):
+            for path in (GEN_H,):
                 if read(path) != saved[path]:
                     problems.append(
                         "%s is stale; re-run gen_help.py"
@@ -82,7 +82,7 @@ def main():
         problems.append("ids defined but never used: %s" % ", ".join(unused))
 
     # 4. Width re-check, independent of the generator's own bookkeeping.
-    pool = re.findall(r'^\s*"((?:[^"\\]|\\.)*)\\0"', read(GEN_CPP), re.M)
+    pool = re.findall(r'^\s*"((?:[^"\\]|\\.)*)\\0"', read(GEN_H), re.M)
     if pool:
         widest = max(pool, key=gen_help.text_px)
         if gen_help.text_px(widest) > gen_help.WIDTH_PX:
