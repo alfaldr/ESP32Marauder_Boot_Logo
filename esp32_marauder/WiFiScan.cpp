@@ -1,5 +1,6 @@
 #include "esp_random.h"
 #include "WiFiScan.h"
+#include "esp_heap_caps.h"
 #include "ReconMission.h"
 #include "FoxHuntTarget.h"
 #include "BeaconFrame.h"
@@ -10426,6 +10427,33 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
                 sizeof(AccessPoint) + sizeof(LinkedList<uint16_t>) + 128))
           return;
 
+        // DIAGNOSIS: checkMem() measures the struct plus a 128 byte reserve,
+        // but every String in here -- essid, bssid_mac, the comment built
+        // further down -- allocates separately through malloc, and each
+        // AccessPoint copy in the beacon path allocates two more. The reserve
+        // can therefore look comfortable while the 8-bit internal heap that
+        // String actually draws from is nearly empty. This is the only place
+        // a new AP is created, so a low reading here explains a later crash in
+        // String::copy without having to catch the crash itself.
+        //
+        // The latch keeps it to one line per depletion event: a sniffer that
+        // prints every beacon would flood the port and change the timing.
+        static uint32_t low_heap_reported = 0;
+        const uint32_t free8 = (uint32_t)heap_caps_get_free_size(
+            MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        if (free8 < 8192) {
+          if (low_heap_reported == 0 || free8 < low_heap_reported / 2) {
+            Serial.printf("[diag] LOW HEAP free=%u largest=%u aps=%d\n",
+                          (unsigned)free8,
+                          (unsigned)heap_caps_get_largest_free_block(
+                              MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                          access_points->size());
+            low_heap_reported = free8;
+          }
+        } else {
+          low_heap_reported = 0;
+        }
+
         if (snifferPacket->payload[37] > 0) {
           for (int i = 0; i < SSID_LEN(snifferPacket, len); i++)
             essid.concat((char)snifferPacket->payload[i + 38]);
@@ -10624,15 +10652,60 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
     comment = String("EAPOL ");
     if (handshake_msg > 0) comment += "M" + String(handshake_msg) + " ";
     comment += "bssid=" + String(bssid_mac) + " sta=" + String(sta_mac);
-    if (ap_index >= 0) {
+    // Same stale-index exposure as the beacon path below: ap_index was computed
+    // around line 10475 and this runs 150 lines later. Guarding both means the
+    // diagnosis covers whichever call the backtrace lands on.
+    if (ap_index >= 0 && ap_index < access_points->size()) {
       comment += " ssid=" + access_points->get(ap_index).essid;
+    } else if (ap_index >= 0) {
+      Serial.printf("[diag] STALE INDEX (eapol) idx=%d size=%d free=%u\n",
+                    ap_index, access_points->size(),
+                    (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL |
+                                                      MALLOC_CAP_8BIT));
     }
     save_frame = true;
   } else if (is_beacon && ap_index >= 0) {
     AccessPoint ap = access_points->get(ap_index);
     if (!ap.beacon_saved) {
       ap.beacon_saved = true;
-      access_points->set(ap_index, ap);
+
+      // ---- DIAGNOSIS: why this crashes -------------------------------
+      //
+      // A real crash landed here. LoadProhibited, EXCCAUSE 0x1c,
+      // EXCVADDR 0x0f, with the backtrace running
+      //   eapolSnifferCallback -> LinkedList::set -> AccessPoint::operator=
+      //   -> String::operator= -> String::copy
+      // in eight minutes of EAPOL with ForcePMKID on.
+      //
+      // Two causes fit that address, and they need different fixes:
+      //   (a) a String allocation failed, leaving essid pointing nowhere;
+      //   (b) ap_index was valid where it was computed and stale by the time
+      //       set() was reached, so set() writes through a bad pointer.
+      //
+      // Nothing here prints per frame: the sniffer runs in the WiFi task and a
+      // Serial.print per beacon would change the timing of the very thing being
+      // diagnosed. Only the case that is about to crash says anything.
+      //
+      // heap_caps_get_free_size is the number that matters, because String
+      // uses malloc, which takes from the internal 8-bit capable heap rather
+      // than the general pool the memory guard measures.
+      if (access_points->size() <= 0 || ap_index >= access_points->size()) {
+        Serial.printf("[diag] STALE INDEX idx=%d size=%d essid_len=%u "
+                      "free=%u largest=%u\n",
+                      ap_index, access_points->size(),
+                      (unsigned)ap.essid.length(),
+                      (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL |
+                                                        MALLOC_CAP_8BIT),
+                      (unsigned)heap_caps_get_largest_free_block(
+                          MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+        // Skip the write. If this is the cause, the crash stops here and the
+        // beacon is simply not saved, which is a far better outcome than a
+        // reboot 8 minutes into a capture.
+      } else {
+        access_points->set(ap_index, ap);
+      }
+      // ---- END DIAGNOSIS ----------------------------------------------
+
       comment = "BEACON bssid=" + bssid + " ssid=" + ap.essid;
       save_frame = true;
     }
