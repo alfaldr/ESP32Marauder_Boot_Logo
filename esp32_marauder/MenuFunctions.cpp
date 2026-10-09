@@ -2225,14 +2225,14 @@ void MenuFunctions::buildBootLogMenu() {
   // Colour is doing the job the icons did before the text screen: title,
   // mode, description and "when to use it" stay distinguishable while
   // scrolling, without putting a symbol on every line.
-  #define HELP_ROW(id, col) {id, col}
+  #define HELP_ROW(id, col, r) {id, col, r}
   #define HELP_GAP HELP_ROW(HELP_ID_MAX, TFT_BLACK, false)
   #define HELP_RULE HELP_ROW(HELP_ID_MAX, TFT_DARKGREY, true)
 
   #define HELP_MODE(prefix, suffix) \
-    HELP_ROW(H_##prefix##_##suffix##_NAME, TFT_WHITE), \
-    HELP_ROW(H_##prefix##_##suffix##_WHAT, TFT_LIGHTGREY), \
-    HELP_ROW(H_##prefix##_##suffix##_WHEN, TFT_ORANGE), \
+    HELP_ROW(H_##prefix##_##suffix##_NAME, TFT_WHITE, false), \
+    HELP_ROW(H_##prefix##_##suffix##_WHAT, TFT_LIGHTGREY, false), \
+    HELP_ROW(H_##prefix##_##suffix##_WHEN, TFT_ORANGE, false), \
     HELP_GAP
 
   void MenuFunctions::showHelpSniffers() {
