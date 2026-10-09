@@ -2195,7 +2195,7 @@ void MenuFunctions::buildBootLogMenu() {
   void MenuFunctions::showHelpPage(HelpSectionFn section) {
     help_page = 0;
     help_section_show = section;
-    section();
+    (this->*section)();
   }
 
   // A mode: name, what it does, when to reach for it.
