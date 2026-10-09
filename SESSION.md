@@ -67,10 +67,13 @@ yazildi ve dogrulandi. Icerir:
    `WiFi > Sniffers > EAPOL/PMKID Scan` calistir, dosyayi cikar, `capinfos` ile
    formati ve `tshark` ile yorumlari kontrol et. Aircrack-ng icin:
    `editcap -F libpcap x.pcapng x.pcap`
-2. **Menude EAPOL/PMKID Scan deauth gondermiyor.** `WIFI_SCAN_EAPOL` pasif;
-   `send_deauth` yalnizca `WIFI_SCAN_ACTIVE_EAPOL` / `ACTIVE_LIST_EAPOL` veya
-   `ForcePMKID` ayarinda acik. Menuden aktif baslatmanin yolu **yok**; sadece
-   CLI'da `sniffpmkid -d` var. Menuye aktif bir girdi eklenmesi mantikli.
+2. ~~Menude EAPOL/PMKID Scan deauth gondermiyor~~ **Kapatildi: kullanici
+   sorun cozuldu deyip bu konuya dokunulmamasini istedi** (2026-10-09).
+   Gercek durum buydu: deauth **gonderiyor**, `ForcePMKID` ayari acik oldugu
+   icin (`settings -s ForcePMKID enable`). Ayar kalici oldugundan menudeki
+   her taramada gider; `DEAUTH TX` ekranda gorunuyor. Degisiklik yapilmayacak,
+   yalnizca not: ayar kapaliyken mod sessizce bos yakalar ve kullanici
+   `DEAUTH TX: FALSE` yazisini okumak zorunda.
 3. ~~Turkce glifler~~ **Kapatildi: kullanici Turkce karakterden vazgecsti**
    (2026-10-09). Katalog ASCII'de kalir: `Koklayicilar`, `BSSID'i`,
    `Saldirilar`. Ozel font uretme denemesi yapilmadi. Tek istisna olarak
