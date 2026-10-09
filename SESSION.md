@@ -27,8 +27,17 @@ xtensa g++     C:\Users\Admin\.platformio\packages\toolchain-xtensa-esp32\bin\xt
 gh             C:\Program Files\GitHub CLI   (PATH'te degil, eklenmeli)
 Wireshark      C:\Program Files\Wireshark\tshark.exe, capinfos.exe, editcap.exe
 repo           C:\Users\Admin\firmware\ESP32Marauder
-calisma alani  C:\Users\Admin\Desktop\marauder_boot
+calisma alani  C:\Users\Admin\Desktop\marauder_boot  (gomulu, gecici; kalici
+              betikler artik tools/ ve lang/ altinda)
+SD kart        D:  (USB okuyucu ile baglanir, kart cihazda takili kalir)
 ```
+
+**Duzeltme (2026-10-09):** xtensa g++ **PATH'te degil ama kurulu**. C++ bicim
+kontrolu icin:
+`& "C:\Users\Admin\.platformio\packages\toolchain-xtensa-esp32\bin\xtensa-esp32-elf-g++.exe"`
+Onceki not "yerel derleme yok" diyordu; g++ var, ancak **Arduino core 2.0.11
+kurulu degil**, tam firmware derlenemez. Kucuk ornekleri `.exe` olarak derlemek
+icin yine de yeterli.
 
 ## Derleme
 

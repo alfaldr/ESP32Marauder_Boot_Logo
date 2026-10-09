@@ -1,0 +1,7 @@
+# Outputs written next to the scripts that produce them.
+# They are captures and boot logs: regenerate by re-running the
+# tool, not worth versioning.
+*.bin
+boot_log.txt
+sd_check.txt
+serial_capture.pcapng
