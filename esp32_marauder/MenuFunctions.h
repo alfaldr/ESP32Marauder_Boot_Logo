@@ -398,11 +398,11 @@ Menu bootLogMenu;
   // Reference. The index is a normal menu; each section is a text screen
   // drawn straight to the panel, one screen, no scrolling.
   void drawHelpSection(const HelpId* ids, uint8_t count);
-  void showHelpSniffers();
-  void showHelpAttacks();
-  void showHelpScanners();
-  void showHelpCapture();
-  void showHelpTerms();
+  static void showHelpSniffers();
+  static void showHelpAttacks();
+  static void showHelpScanners();
+  static void showHelpCapture();
+  static void showHelpTerms();
 
   // True while a section text screen is up, so a tap returns to the index
   // instead of being read as a menu selection.

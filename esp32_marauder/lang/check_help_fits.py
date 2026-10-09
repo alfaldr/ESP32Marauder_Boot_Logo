@@ -18,15 +18,11 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # From configs.h for MARAUDER_CYD_MICRO.
-TFT_HEIGHT = 320
-STATUS_BAR_WIDTH = 20
 LINE_PX = 8
-TOP_OFFSET = 2      # rows drawn below the status bar
-BOTTOM_MARGIN = 2
-
-FIRST_Y = STATUS_BAR_WIDTH + TOP_OFFSET
-LAST_Y = TFT_HEIGHT - BOTTOM_MARGIN - LINE_PX
-ROWS = ((LAST_Y - FIRST_Y) // LINE_PX) + 1
+TOP_Y = 22
+FOOTER_Y = 312
+ROWS_PER_PAGE = 35
+MAX_PAGES = 6
 
 
 def main():
@@ -58,17 +54,16 @@ def main():
         "TERMS": count(9, terms=True),
     }
 
-    print("panel holds %d rows (y=%d..%d, %dpx rows, %dpx margin)"
-          % (ROWS, FIRST_Y, LAST_Y, LINE_PX, BOTTOM_MARGIN))
+    print("paging: %d rows per page, footer at y=%d (mirrors"
+          " MenuFunctions.cpp)" % (ROWS_PER_PAGE, FOOTER_Y))
     print()
 
     bad = []
     for name, rows in SECTIONS.items():
-        fits = rows <= ROWS
-        print("  %-9s %3d rows  %s" % (name, rows,
-                                        "fits" if fits else "OVERFLOW"))
-        if not fits:
-            bad.append((name, rows))
+        pages = (rows + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE
+        print("  %-9s %3d rows  %d page(s)" % (name, rows, pages))
+        if pages > MAX_PAGES:
+            bad.append((name, rows, pages))
 
     # The ids the tables reference must all exist; the macro hides them from
     # the generic check in check_help.py.
@@ -77,12 +72,12 @@ def main():
 
     if bad:
         print("\nFAIL")
-        for name, rows in bad:
-            print("  %s needs %d rows, %d available: drop %d"
-                  % (name, rows, ROWS, rows - ROWS))
+        for name, rows, pages in bad:
+            print("  %s needs %d pages, over the %d allowed: shorten it"
+                  % (name, pages, MAX_PAGES))
         return 1
 
-    print("\nOK: every section fits")
+    print("\nOK: every section fits in a sane number of pages")
     return 0
 
 

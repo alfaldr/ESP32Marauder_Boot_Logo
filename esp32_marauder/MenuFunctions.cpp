@@ -2203,7 +2203,7 @@ void MenuFunctions::buildBootLogMenu() {
     H_##prefix##_##suffix##_NAME, H_##prefix##_##suffix##_WHAT, \
     H_##prefix##_##suffix##_WHEN, HELP_ID_MAX
 
-  void MenuFunctions::showHelpSniffers() {
+  static void MenuFunctions::showHelpSniffers() {
     static const HelpId page[] = {
         H_SNIFFERS_TITLE,
         HELP_MODE(SNIFFERS, BEACON), HELP_MODE(SNIFFERS, EAPOL),
@@ -2215,7 +2215,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  void MenuFunctions::showHelpAttacks() {
+  static void MenuFunctions::showHelpAttacks() {
     static const HelpId page[] = {
         H_ATTACKS_TITLE,
         HELP_MODE(ATTACKS, DEAUTH), HELP_MODE(ATTACKS, TARGETED),
@@ -2226,7 +2226,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  void MenuFunctions::showHelpScanners() {
+  static void MenuFunctions::showHelpScanners() {
     static const HelpId page[] = {
         H_SCANNERS_TITLE,
         HELP_MODE(SCANNERS, PING), HELP_MODE(SCANNERS, ARP),
@@ -2236,7 +2236,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  void MenuFunctions::showHelpCapture() {
+  static void MenuFunctions::showHelpCapture() {
     static const HelpId page[] = {
         H_CAPTURE_TITLE, HELP_ID_MAX,
         H_CAPTURE_STEP1_A, H_CAPTURE_STEP2_A, H_CAPTURE_STEP3_A,
@@ -2246,7 +2246,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  void MenuFunctions::showHelpTerms() {
+  static void MenuFunctions::showHelpTerms() {
     static const HelpId page[] = {
         H_TERMS_TITLE, HELP_ID_MAX,
         H_TERMS_EAPOL_A, H_TERMS_SAE_A, H_TERMS_PMKID_A,
