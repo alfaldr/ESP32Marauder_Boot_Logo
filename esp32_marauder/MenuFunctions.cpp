@@ -377,7 +377,7 @@ void MenuFunctions::main(uint32_t currentTime)
       // unreachable, since nothing could show what was below the fold.
       if (help_page + 1 < help_pages) {
         help_page++;
-        this->help_section_show();
+        (this->*this->help_section_show)();
       } else {
         this->help_text_active = false;
         this->help_section_show = nullptr;
@@ -2192,7 +2192,7 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   // Entering a section always starts at the first page.
-  void MenuFunctions::showHelpPage(void (*section)()) {
+  void MenuFunctions::showHelpPage(HelpSectionFn section) {
     help_page = 0;
     help_section_show = section;
     section();
@@ -2203,7 +2203,7 @@ void MenuFunctions::buildBootLogMenu() {
     H_##prefix##_##suffix##_NAME, H_##prefix##_##suffix##_WHAT, \
     H_##prefix##_##suffix##_WHEN, HELP_ID_MAX
 
-  static void MenuFunctions::showHelpSniffers() {
+  void MenuFunctions::showHelpSniffers() {
     static const HelpId page[] = {
         H_SNIFFERS_TITLE,
         HELP_MODE(SNIFFERS, BEACON), HELP_MODE(SNIFFERS, EAPOL),
@@ -2215,7 +2215,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  static void MenuFunctions::showHelpAttacks() {
+  void MenuFunctions::showHelpAttacks() {
     static const HelpId page[] = {
         H_ATTACKS_TITLE,
         HELP_MODE(ATTACKS, DEAUTH), HELP_MODE(ATTACKS, TARGETED),
@@ -2226,7 +2226,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  static void MenuFunctions::showHelpScanners() {
+  void MenuFunctions::showHelpScanners() {
     static const HelpId page[] = {
         H_SCANNERS_TITLE,
         HELP_MODE(SCANNERS, PING), HELP_MODE(SCANNERS, ARP),
@@ -2236,7 +2236,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  static void MenuFunctions::showHelpCapture() {
+  void MenuFunctions::showHelpCapture() {
     static const HelpId page[] = {
         H_CAPTURE_TITLE, HELP_ID_MAX,
         H_CAPTURE_STEP1_A, H_CAPTURE_STEP2_A, H_CAPTURE_STEP3_A,
@@ -2246,7 +2246,7 @@ void MenuFunctions::buildBootLogMenu() {
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-  static void MenuFunctions::showHelpTerms() {
+  void MenuFunctions::showHelpTerms() {
     static const HelpId page[] = {
         H_TERMS_TITLE, HELP_ID_MAX,
         H_TERMS_EAPOL_A, H_TERMS_SAE_A, H_TERMS_PMKID_A,

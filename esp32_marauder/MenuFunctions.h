@@ -398,11 +398,11 @@ Menu bootLogMenu;
   // Reference. The index is a normal menu; each section is a text screen
   // drawn straight to the panel, one screen, no scrolling.
   void drawHelpSection(const HelpId* ids, uint8_t count);
-  static void showHelpSniffers();
-  static void showHelpAttacks();
-  static void showHelpScanners();
-  static void showHelpCapture();
-  static void showHelpTerms();
+  void showHelpSniffers();
+  void showHelpAttacks();
+  void showHelpScanners();
+  void showHelpCapture();
+  void showHelpTerms();
 
   // True while a section text screen is up, so a tap returns to the index
   // instead of being read as a menu selection.
@@ -423,10 +423,11 @@ Menu bootLogMenu;
   static constexpr uint8_t HELP_ROWS_PER_PAGE = 35;
   static constexpr uint8_t HELP_MAX_ROWS = 80;
 
-  void showHelpPage(void (*section)());
+  typedef void (MenuFunctions::*HelpSectionFn)();
+  void showHelpPage(HelpSectionFn section);
 
   bool help_text_active = false;
-  void (*help_section_show)() = nullptr;
+  HelpSectionFn help_section_show = nullptr;
   int16_t help_page = 0;
   uint8_t help_pages = 1;
   void addBackNode(Menu* menu, Menu* parent);
