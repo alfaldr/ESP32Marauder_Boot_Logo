@@ -3231,6 +3231,9 @@ void WiFiScan::StopScan(uint8_t scan_mode) {
       this->req_frames = 0;
       this->resp_frames = 0;
       this->deauth_frames = 0;
+      this->deauth_tx_ok = 0;
+      this->deauth_tx_failed = 0;
+      this->deauth_tx_events = 0;
       this->eapol_frames = 0;
       this->min_rssi = 0;
       this->max_rssi = -128;
@@ -10541,8 +10544,24 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
       wifi_scan_obj.deauth_frame_default[21] = snifferPacket->payload[15];      
     
       // Send packet
-      for (int i = 0; i < 5; i++)
-        esp_wifi_80211_tx(WIFI_IF_AP, wifi_scan_obj.deauth_frame_default, sizeof(wifi_scan_obj.deauth_frame_default), false);
+      //
+      // The return value used to be discarded, so "DEAUTH TX: TRUE" on screen
+      // only ever meant the flag was set, never that a frame left the radio.
+      // esp_wifi_80211_tx returns ESP_ERR_NO_MEM when the TX buffer is full,
+      // which is exactly what happens when the sniffer callback is running hot
+      // and the SD write is keeping up: every call can fail silently and the
+      // capture still looks healthy. Counting both outcomes makes the claim
+      // checkable rather than assumed.
+      for (int i = 0; i < 5; i++) {
+        if (esp_wifi_80211_tx(WIFI_IF_AP, wifi_scan_obj.deauth_frame_default,
+                              sizeof(wifi_scan_obj.deauth_frame_default),
+                              false) == ESP_OK) {
+          wifi_scan_obj.deauth_tx_ok++;
+        } else {
+          wifi_scan_obj.deauth_tx_failed++;
+        }
+      }
+      wifi_scan_obj.deauth_tx_events++;   // beacons that triggered a burst
       delay(1);
     }
 
@@ -11391,8 +11410,18 @@ void WiFiScan::renderRawStats() {
     }
     display_obj.tft.println("     RSSI: " + (String)this->min_rssi + " - " + (String)this->max_rssi);
     if (this->send_deauth) {
-    display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    display_obj.tft.println(F("\nDEAUTH TX: TRUE"));
+      display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      // The frame count, not just the flag. "DEAUTH TX: TRUE" previously said
+      // only that the code path was enabled; a transmitter that fails every
+      // call because the TX buffer is full looked identical on screen.
+      display_obj.tft.println(F("\nDEAUTH TX: TRUE"));
+      display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      display_obj.tft.println("  Deauth TX: " + (String)this->deauth_tx_ok +
+                             "/" + (String)(this->deauth_tx_ok + this->deauth_tx_failed));
+      if (this->deauth_tx_failed > 0) {
+        display_obj.tft.setTextColor(TFT_RED, TFT_BLACK);
+        display_obj.tft.println("  TX failed: " + (String)this->deauth_tx_failed);
+      }
     } else {
     display_obj.tft.setTextColor(TFT_RED, TFT_BLACK);
     display_obj.tft.println(F("\nDEAUTH TX: FALSE"));
@@ -11415,8 +11444,17 @@ void WiFiScan::renderRawStats() {
       Serial.println("Dropped frames: " + (String)buffer_obj.getDropped());
   }
   Serial.println("     RSSI: " + (String)this->min_rssi + " - " + (String)this->max_rssi);
-  if (this->send_deauth)
+  if (this->send_deauth) {
   Serial.println(F("\nDEAUTH TX: TRUE"));
+  // Sent/total, so the log can be checked without reading the panel. The
+  // "Deauth:" line above counts frames heard from other stations, which stays
+  // at zero even while this one climbs.
+  Serial.println("  Deauth TX: " + (String)this->deauth_tx_ok + "/" +
+                 (String)(this->deauth_tx_ok + this->deauth_tx_failed) +
+                 "  events: " + (String)this->deauth_tx_events);
+  if (this->deauth_tx_failed > 0)
+    Serial.println("  TX failed: " + (String)this->deauth_tx_failed);
+  }
   else
   Serial.println(F("\nDEAUTH TX: FALSE"));
 }

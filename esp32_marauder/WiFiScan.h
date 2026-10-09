@@ -985,7 +985,14 @@ class WiFiScan
     uint32_t beacon_frames = 0;
     uint32_t req_frames = 0;
     uint32_t resp_frames = 0;
-    uint32_t deauth_frames = 0;
+    uint32_t deauth_frames = 0;  // deauth frames heard from other stations
+// Outgoing deauth, counted separately from deauth_frames because that one only
+// ever sees traffic somebody else sent. esp_wifi_80211_tx returning anything
+// other than ESP_OK used to be discarded, so there was no way to tell a
+// working transmitter from a flag that was merely set.
+uint32_t deauth_tx_ok = 0;
+uint32_t deauth_tx_failed = 0;
+uint32_t deauth_tx_events = 0;  // beacons that triggered a burst of five
     uint32_t eapol_frames = 0;
     uint32_t complete_eapol = 0;
     uint32_t flock_devices = 0;
