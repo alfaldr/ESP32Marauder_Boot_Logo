@@ -24,6 +24,8 @@
 #include "SDInterface.h"
 #include "settings.h"
 #include "MenuInputRepeat.h"
+// HelpId, for the on-device reference pages.
+#include "lang/HelpLang.h"
 
 #ifdef HAS_BUTTONS
   #include "Switches.h"
