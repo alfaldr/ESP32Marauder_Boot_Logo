@@ -3753,17 +3753,6 @@ String WiFiScan::security_int_to_string(int security_type) {
 }
 
 void WiFiScan::startPcap(const char* file_name) {
-  // A new capture file means a new session for counting purposes. The has_msg_*
-  // flags on AccessPoint outlive a scan -- they are only reset when an AP is
-  // first created -- so getCompleteEapol() keeps reporting handshakes from
-  // previous captures and the number on screen stops describing the file that
-  // was just written. Observed directly: three captures on the card, "Complete
-  // EAPOL: 3" on screen, one complete handshake in the file that was open.
-  //
-  // eapol_file_count tracks this capture only. It is a plain counter, so it
-  // resets here and nowhere else.
-  eapol_file_count = 0;
-
   buffer_obj.pcapOpen(
     file_name,
     #if defined(HAS_SD)
@@ -10644,17 +10633,6 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
         handshake_msg = 4;
         if (ap_index >= 0) {
           AccessPoint temp_ap = access_points->get(ap_index);
-          // Count it once, on the message that completes the exchange. M4
-          // arriving is what makes a handshake real, and counting here rather
-          // than by rescanning the list means the per-file number reflects the
-          // file being written instead of the device's whole uptime.
-          if (!temp_ap.has_msg_4 && temp_ap.has_msg_1 && temp_ap.has_msg_2 &&
-              temp_ap.has_msg_3) {
-            // The sniffer callback is static, so there is no `this`. Every
-            // other counter it touches goes through the global instance for
-            // the same reason.
-            wifi_scan_obj.eapol_file_count++;
-          }
           temp_ap.has_msg_4 = true;
           access_points->set(ap_index, temp_ap);
         }
@@ -11403,14 +11381,7 @@ void WiFiScan::renderRawStats() {
     if ((this->currentScanMode == WIFI_SCAN_EAPOL) ||
         (this->currentScanMode == WIFI_SCAN_ACTIVE_EAPOL)) {
       display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
-      // Two numbers, because they answer different questions. "In file" is
-      // reset when the capture opens, so it describes what was just written to
-      // the card and is the one to trust when looking for a handshake to crack.
-      // "Total" is the device's running count since boot and keeps climbing
-      // across scans, which is what made it look like a file contained
-      // handshakes it did not.
-      display_obj.tft.println("EAPOL in file: " + (String)this->eapol_file_count);
-      display_obj.tft.println("EAPOL total:  " + (String)this->getCompleteEapol());
+      display_obj.tft.println("Complete EAPOL: " + (String)this->getCompleteEapol());
       // Frames the capture buffer had no room for. If this climbs, the capture
       // is incomplete and the reason is visible instead of guessed at.
       if (buffer_obj.getDropped() > 0) {
@@ -11450,11 +11421,7 @@ void WiFiScan::renderRawStats() {
   Serial.println("    EAPOL: " + (String)this->eapol_frames);
   if ((this->currentScanMode == WIFI_SCAN_EAPOL) ||
       (this->currentScanMode == WIFI_SCAN_ACTIVE_EAPOL)) {
-    // Same pair as the screen: the file count is what was written to the card,
-    // the total is the device's running count since boot. Reporting only the
-    // latter is what made a file look like it held handshakes it did not.
-    Serial.println("EAPOL in file: " + (String)this->eapol_file_count);
-    Serial.println("EAPOL total:  " + (String)this->getCompleteEapol());
+    Serial.println("Complete EAPOL: " + (String)this->getCompleteEapol());
     if (buffer_obj.getDropped() > 0)
       Serial.println("Dropped frames: " + (String)buffer_obj.getDropped());
   }

@@ -1,79 +1,75 @@
 #!/usr/bin/env python3
-"""
-Finds string literals that contain characters the menu font cannot draw.
+"""Fails if any string literal in the firmware sources contains a non-ASCII byte.
 
-TFT_eSPI's packed fonts cover 0x20..0x7E. For a code point outside that range
-drawChar computes the glyph index as (uniCode - font->first) and indexes the
-glyph table with no bounds check, so anything above 0x7E reads past the end of
-the table. The xAdvance and xHeight it then picks up are whatever bytes
-happened to be there, and the draw loop runs for that many rows -- enough to
-hang a frame, overrun a buffer, or panic.
+The reason this exists: TFT_eSPI indexes its glyph table from a char without
+bounds checking. A character outside the font's range -- U+015E for instance --
+reads past the end of the table, so xAdvance and xHeight come out of whatever
+happens to be in memory and the drawing loop walks off the end of the buffer.
+That was a panic once, and it happened in the boot log text before anyone
+thought to check what characters were in it.
 
-The reference catalogue is generated and already rejects non-ASCII, but text
-hand-written elsewhere in the firmware is not covered by that check, so this
-sweeps the whole sketch.
+So the rule is simple and absolute: string literals stay ASCII. Turkish is written
+with the closest ASCII equivalents -- s for s, i for i, g for g, c for c, o for o,
+u for u -- which is also what gets produced when someone types on a phone
+keyboard without a Turkish layout.
 
-Usage:  python tools/check_ascii_strings.py [sketch_dir]
+What counts as a string literal is deliberately conservative. Char arrays used as
+lookup tables are included, because they end up in drawString calls. Comments are
+skipped: a Turkish comment is fine, only rendered text is a problem, and this
+repository has plenty of correctly spelled Turkish in its notes.
 """
 
 import os
 import re
 import sys
 
-SKETCH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "esp32_marauder")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                    "esp32_marauder")
 
-SKIP_DIRS = {".git", "__pycache__"}
-# The generated catalogue is validated by gen_help.py against the same rule,
-# and these are serial-only or comment text.
-COMMENT = re.compile(r"^\s*(//|\*|/\*|#)")
+SCAN = (".cpp", ".h", ".ino")
 
-LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
+# A double-quoted run with no closing quote on the same line, or one with an odd
+# number of backslashes before it, is escaped and not what this wants to catch.
+STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
+
+
+def check(path):
+    problems = []
+    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        for lineno, line in enumerate(fh, 1):
+            # Strip comments before looking at literals, so a quote inside a
+            # comment is not read as one.
+            code = re.sub(r"//.*$", "", line)
+            code = re.sub(r"/\*.*?\*/", "", code)
+            for m in STRING.finditer(code):
+                for ch in m.group(1):
+                    if ord(ch) > 126:
+                        problems.append((lineno, ch, ord(ch), line.strip()))
+                        break
+    return problems
 
 
 def main():
-    root = os.path.abspath(SKETCH)
-    hits = []
-    scanned = 0
+    files = []
+    for base, _, names in os.walk(ROOT):
+        for n in names:
+            if n.endswith(SCAN):
+                files.append(os.path.join(base, n))
 
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        for name in sorted(filenames):
-            if not name.endswith((".cpp", ".h", ".ino")):
-                continue
-            path = os.path.join(dirpath, name)
-            rel = os.path.relpath(path, root)
-            scanned += 1
-            with open(path, "r", encoding="utf-8", errors="replace") as fh:
-                for lineno, line in enumerate(fh, 1):
-                    if COMMENT.match(line):
-                        continue
-                    for m in LITERAL.finditer(line):
-                        body = m.group(1)
-                        bad = sorted({c for c in body if ord(c) > 0x7E})
-                        if bad:
-                            # Decode the C escapes we might have mangled.
-                            shown = "".join(
-                                "\\x%02x" % ord(c) if ord(c) > 0x7F else c
-                                for c in body)
-                            hits.append((rel, lineno, shown,
-                                         "".join(bad)))
-                            break
+    total = 0
+    for path in sorted(files):
+        rel = os.path.relpath(path, os.path.dirname(ROOT))
+        for lineno, ch, code, text in check(path):
+            print("%s:%d  U+%04X  %s" % (rel, lineno, code, text[:70]))
+            total += 1
 
-    print("scanned %d files under %s" % (scanned, root))
-    if not hits:
-        print("\nOK: every string literal is ASCII")
-        return 0
-
-    print("\n%d string literal(s) the menu font cannot draw:\n" % len(hits))
-    for rel, lineno, shown, bad in hits:
-        print("  %s:%d" % (rel, lineno))
-        print("      %s" % shown)
-        print("      offending: %s\n" % " ".join("U+%04X" % ord(c) for c in bad))
-    print("These reach the display through addNodes or tft.print. Replace them")
-    print("with a plain ASCII transliteration; the font has no glyph above 0x7E")
-    print("and TFT_eSPI indexes its glyph table without a bounds check.")
-    return 1
+    print("scanned %d files under %s" % (len(files), ROOT))
+    print()
+    if total:
+        print("HATA: %d non-ASCII string literal" % total)
+        return 1
+    print("OK: every string literal is ASCII")
+    return 0
 
 
 if __name__ == "__main__":

@@ -995,13 +995,6 @@ uint32_t deauth_tx_failed = 0;
 uint32_t deauth_tx_events = 0;  // beacons that triggered a send
     uint32_t eapol_frames = 0;
     uint32_t complete_eapol = 0;
-    // Handshakes completed into the capture file currently being written.
-    // Distinct from getCompleteEapol(), which counts APs holding all four
-    // handshake flags: those flags are only cleared when an AP is first
-    // created, so that number is the device's total since boot and does not
-    // describe the file on the card. This one is reset in startPcap(), so it
-    // answers the question actually being asked: what did this scan get.
-    uint32_t eapol_file_count = 0;
     uint32_t flock_devices = 0;
     int8_t min_rssi = 0;
     int8_t max_rssi = -128;
