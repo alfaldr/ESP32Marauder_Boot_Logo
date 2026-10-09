@@ -2116,9 +2116,11 @@ void MenuFunctions::buildBootLogMenu() {
   // section fits on one screen, so there is nothing to scroll.
   //
   // HELP_ID_MAX in a section list means "blank line", which separates one mode
-  // from the next. Colour was dropped deliberately: queueLine() takes no
-  // colour argument, and drawing straight to the panel for it was not worth the
-  // extra code when a blank line separates entries just as well.
+  // from the next. Colour came later, once the rows stopped going through
+  // queueLine(): the section tables carry a colour per row, so title, mode
+  // name, description and "when to reach for it" are told apart by colour and
+  // not only by order. queueLine() still has no colour argument, which is why
+  // the mode tables were left monochrome rather than half converted.
 
   void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
     menu->parentMenu = parent;
@@ -2127,33 +2129,40 @@ void MenuFunctions::buildBootLogMenu() {
     });
   }
 
-  void MenuFunctions::drawHelpSection(const HelpId *ids, uint8_t count) {
-    // Flatten the catalogue into rows first. Doing it this way means the page
-    // count is derived from exactly the rows that get drawn, so a page can
-    // never claim to have more content than it shows, and no assumption about
-    // how many pixels a line occupies can silently drop entries: whatever does
-    // not fit becomes another page.
-    static const char *rows[HELP_MAX_ROWS];
+  void MenuFunctions::drawHelpSection(const HelpRow *rows, uint8_t count) {
+    // Flatten into text lines first. Doing it this way means the page count is
+    // derived from exactly what gets drawn, so a page can never claim more
+    // content than it shows, and no assumption about how many pixels a line
+    // takes can silently drop entries: whatever does not fit becomes a page.
+    static const char *text[HELP_MAX_ROWS];
+    uint16_t colour[HELP_MAX_ROWS];
+    bool rule[HELP_MAX_ROWS];
     uint8_t n = 0;
 
     uint8_t last = count;
-    while (last > 0 && ids[last - 1] == HELP_ID_MAX) {
+    while (last > 0 && rows[last - 1].id == HELP_ID_MAX) {
       last--;   // a separator after the final entry separates nothing
     }
 
     for (uint8_t i = 0; i < last && n < HELP_MAX_ROWS; i++) {
-      if (ids[i] == HELP_ID_MAX) {
-        rows[n++] = nullptr;
+      if (rows[i].id == HELP_ID_MAX) {
+        text[n] = nullptr;
+        colour[n] = rows[i].colour;
+        rule[n] = rows[i].rule;
+        n++;
         continue;
       }
       const char *lines[4];
-      const uint8_t k = helpLines(ids[i], lines, 4);
+      const uint8_t k = helpLines(rows[i].id, lines, 4);
       for (uint8_t j = 0; j < k && n < HELP_MAX_ROWS; j++) {
-        rows[n++] = lines[j];
+        text[n] = lines[j];
+        colour[n] = rows[i].colour;
+        rule[n] = false;
+        n++;
       }
     }
 
-    // One row is reserved at the bottom for the page indicator.
+    // One row at the bottom belongs to the indicator.
     help_pages = (uint8_t)((n + HELP_ROWS_PER_PAGE - 1) / HELP_ROWS_PER_PAGE);
     if (help_pages == 0) help_pages = 1;
     if (help_page >= help_pages) help_page = (int16_t)help_pages - 1;
@@ -2162,30 +2171,43 @@ void MenuFunctions::buildBootLogMenu() {
     display_obj.tft.setTextWrap(false);
     display_obj.tft.setFreeFont(NULL);
     display_obj.tft.setTextSize(1);
-    display_obj.tft.setTextColor(TFT_WHITE);
 
     int16_t y = HELP_TOP_Y;
-    const uint16_t first = help_page * HELP_ROWS_PER_PAGE;
-    const uint16_t limit = (uint16_t)(first + HELP_ROWS_PER_PAGE);
+    const uint16_t first = (uint16_t)help_page * HELP_ROWS_PER_PAGE;
+    const uint16_t limit = first + HELP_ROWS_PER_PAGE;
     for (uint16_t r = first; r < n && r < limit; r++) {
-      display_obj.tft.setCursor(0, y);
-      if (rows[r] == nullptr) {
+      if (text[r] == nullptr) {
+        // A rule takes one row like a blank line does, so adding one never
+        // changes the page arithmetic. Drawn thin and dim on purpose: it has
+        // to separate without pulling the eye off the text above it.
+        if (rule[r]) {
+          display_obj.tft.drawFastHLine(0, y + HELP_LINE_PX / 2,
+                                        display_obj.tft.width() - 1,
+                                        TFT_DARKGREY);
+        }
         y += HELP_LINE_PX;
         continue;
       }
-      display_obj.tft.println(rows[r]);
+      // Colour carries the role of the line, which is what the icons used to
+      // do: the section title, the mode itself, what it does, and when to
+      // reach for it are four things you should be able to tell apart while
+      // scrolling.
+      display_obj.tft.setTextColor(colour[r], TFT_BLACK);
+      display_obj.tft.setCursor(0, y);
+      display_obj.tft.println(text[r]);
       y += HELP_LINE_PX;
     }
 
-    // Footer: where you are, and what a tap does next. Without this a tap
-    // that advances the page looks like the touch did nothing.
     char footer[32];
     if (help_pages > 1) {
-      snprintf(footer, sizeof(footer), "%d/%d  dokun: ileri", (int)help_page + 1,
-               (int)help_pages);
+      snprintf(footer, sizeof(footer), "%d/%d  dokun: ileri",
+               (int)help_page + 1, (int)help_pages);
     } else {
       snprintf(footer, sizeof(footer), "dokun: geri");
     }
+    // The footer stays orange on purpose. It is the only line that tells you
+    // what the next tap does, so dimming it to recede from the body would
+    // hide the one thing you need to notice.
     display_obj.tft.setTextColor(TFT_ORANGE);
     display_obj.tft.setCursor(0, HELP_FOOTER_Y);
     display_obj.tft.println(footer);
@@ -2199,13 +2221,23 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   // A mode: name, what it does, when to reach for it.
+  // One catalogue field plus the colour that says what role it plays.
+  // Colour is doing the job the icons did before the text screen: title,
+  // mode, description and "when to use it" stay distinguishable while
+  // scrolling, without putting a symbol on every line.
+  #define HELP_ROW(id, col) {id, col}
+  #define HELP_GAP HELP_ROW(HELP_ID_MAX, TFT_BLACK, false)
+  #define HELP_RULE HELP_ROW(HELP_ID_MAX, TFT_DARKGREY, true)
+
   #define HELP_MODE(prefix, suffix) \
-    H_##prefix##_##suffix##_NAME, H_##prefix##_##suffix##_WHAT, \
-    H_##prefix##_##suffix##_WHEN, HELP_ID_MAX
+    HELP_ROW(H_##prefix##_##suffix##_NAME, TFT_WHITE), \
+    HELP_ROW(H_##prefix##_##suffix##_WHAT, TFT_LIGHTGREY), \
+    HELP_ROW(H_##prefix##_##suffix##_WHEN, TFT_ORANGE), \
+    HELP_GAP
 
   void MenuFunctions::showHelpSniffers() {
-    static const HelpId page[] = {
-        H_SNIFFERS_TITLE,
+    static const HelpRow page[] = {
+        HELP_ROW(H_SNIFFERS_TITLE, TFT_CYAN, false), HELP_RULE,
         HELP_MODE(SNIFFERS, BEACON), HELP_MODE(SNIFFERS, EAPOL),
         HELP_MODE(SNIFFERS, PROBE), HELP_MODE(SNIFFERS, DEAUTH),
         HELP_MODE(SNIFFERS, PKT), HELP_MODE(SNIFFERS, CHAN),
@@ -2216,8 +2248,8 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   void MenuFunctions::showHelpAttacks() {
-    static const HelpId page[] = {
-        H_ATTACKS_TITLE,
+    static const HelpRow page[] = {
+        HELP_ROW(H_ATTACKS_TITLE, TFT_CYAN, false), HELP_RULE,
         HELP_MODE(ATTACKS, DEAUTH), HELP_MODE(ATTACKS, TARGETED),
         HELP_MODE(ATTACKS, PROBE), HELP_MODE(ATTACKS, BEACON),
         HELP_MODE(ATTACKS, CSA), HELP_MODE(ATTACKS, SAE),
@@ -2227,8 +2259,8 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   void MenuFunctions::showHelpScanners() {
-    static const HelpId page[] = {
-        H_SCANNERS_TITLE,
+    static const HelpRow page[] = {
+        HELP_ROW(H_SCANNERS_TITLE, TFT_CYAN, false), HELP_RULE,
         HELP_MODE(SCANNERS, PING), HELP_MODE(SCANNERS, ARP),
         HELP_MODE(SCANNERS, TELNET), HELP_MODE(SCANNERS, SSH),
         HELP_MODE(SCANNERS, HTTP), HELP_MODE(SCANNERS, RDP),
@@ -2237,26 +2269,40 @@ void MenuFunctions::buildBootLogMenu() {
   }
 
   void MenuFunctions::showHelpCapture() {
-    static const HelpId page[] = {
-        H_CAPTURE_TITLE, HELP_ID_MAX,
-        H_CAPTURE_STEP1_A, H_CAPTURE_STEP2_A, H_CAPTURE_STEP3_A,
-        H_CAPTURE_STEP4_A, H_CAPTURE_STEP5_A, H_CAPTURE_STEP6_A,
-        H_CAPTURE_STEP7_A, H_CAPTURE_STEP8_A,
+    static const HelpRow page[] = {
+        HELP_ROW(H_CAPTURE_TITLE, TFT_ORANGE, false), HELP_RULE,
+        HELP_ROW(H_CAPTURE_STEP1_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP2_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP3_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP4_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP5_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP6_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP7_A, TFT_WHITE, false),
+        HELP_ROW(H_CAPTURE_STEP8_A, TFT_WHITE, false),
     };
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
   void MenuFunctions::showHelpTerms() {
-    static const HelpId page[] = {
-        H_TERMS_TITLE, HELP_ID_MAX,
-        H_TERMS_EAPOL_A, H_TERMS_SAE_A, H_TERMS_PMKID_A,
-        H_TERMS_BSSID_A, H_TERMS_SSID_A, H_TERMS_PROMISCUOUS_A,
-        H_TERMS_DEAUTH_A, H_TERMS_PCAPNG_A, H_TERMS_PCAP_A,
+    static const HelpRow page[] = {
+        HELP_ROW(H_TERMS_TITLE, TFT_CYAN, false), HELP_RULE,
+        HELP_ROW(H_TERMS_EAPOL_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_SAE_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_PMKID_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_BSSID_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_SSID_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_PROMISCUOUS_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_DEAUTH_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_PCAPNG_A, TFT_WHITE, false),
+        HELP_ROW(H_TERMS_PCAP_A, TFT_WHITE, false),
     };
     this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
   #undef HELP_MODE
+  #undef HELP_ROW
+  #undef HELP_GAP
+  #undef HELP_RULE
 
   void MenuFunctions::buildHelpMenu() {
     helpMenu.list->clear();

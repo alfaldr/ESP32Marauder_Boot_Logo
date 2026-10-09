@@ -19,47 +19,47 @@ title = WiFi > Sniffers
 [sniffers.beacon]
 name = Beacon Sniff
 what = Lists nearby APs, keeps one beacon
-when = Use first, to find a BSSID
+when = First stop: it lists the BSSIDs
 
 [sniffers.eapol]
 name = EAPOL/PMKID Scan
 what = Saves 4-way keys, sends deauth too
-when = Use for a known AP
+when = Worth it for an AP you already know
 
 [sniffers.probe]
 name = Probe Request Sniff
 what = What devices are looking for
-when = Use to see networks sought
+when = To learn which networks are sought
 
 [sniffers.deauth]
 name = Deauth Sniff
 what = Who is kicked, and by whom
-when = Use to spot a jammer
+when = Your move against a jammer
 
 [sniffers.pkt]
 name = Packet Monitor
 what = Counts packets per channel
-when = Use to find a quiet channel
+when = Any hunt for a quiet channel
 
 [sniffers.chan]
 name = Channel Analyzer
 what = Live traffic graph, one channel
-when = Use to watch a channel
+when = When one channel needs watching
 
 [sniffers.raw]
 name = Raw Capture
 what = Every frame, nothing filtered
-when = Use when unsure what to seek
+when = Nothing else answered yet
 
 [sniffers.sae]
 name = SAE Commit
 what = The WPA3 handshake equivalent
-when = Use when the target is WPA3
+when = The target speaks WPA3
 
 [sniffers.pine]
 name = Detect Pineapple
 what = Finds rogue APs cloning a real one
-when = Use to audit your own venue
+when = Auditing a venue you run
 
 [attacks]
 title = WiFi > Attacks
@@ -67,37 +67,37 @@ title = WiFi > Attacks
 [attacks.deauth]
 name = Deauth Flood
 what = Kicks every client off the AP
-when = Use to force a reconnection
+when = To force a reconnection
 
 [attacks.targeted]
 name = Deauth Targeted
 what = Kicks one chosen client only
-when = Use to drop a single device
+when = One device has to go, one only
 
 [attacks.probe]
 name = Probe Req Flood
 what = Advertises many fake networks
-when = Use to test client list building
+when = Watches how lists get built
 
 [attacks.beacon]
 name = Beacon Spam List
 what = Replays beacons taken from a file
-when = Use to test beacon parsing
+when = Checks beacon parsing
 
 [attacks.csa]
 name = Channel Switch
 what = Forces clients to another channel
-when = Use to see if a client follows
+when = To see if a client follows
 
 [attacks.sae]
 name = SAE Commit Flood
 what = Drives WPA3 authentication tries
-when = Use to study SAE exchanges
+when = Study SAE exchanges with it
 
 [attacks.quiet]
 name = Quiet Time
 what = Sends nothing, only observes
-when = Use for passive checks
+when = Passive checks, no side effects
 
 [scanners]
 title = WiFi > Scanners
@@ -105,32 +105,32 @@ title = WiFi > Scanners
 [scanners.ping]
 name = Ping Scan
 what = Shows which addresses answer
-when = Use to find live hosts
+when = Finding live hosts
 
 [scanners.arp]
 name = ARP Scan
 what = Maps IP to hardware address
-when = Use to build an inventory
+when = To build an inventory
 
 [scanners.telnet]
 name = Telnet Scan
 what = Finds port 23 open and reachable
-when = Use to find un-managed gear
+when = Hunting un-managed gear
 
 [scanners.ssh]
 name = SSH Scan
 what = The same, on port 22
-when = Use to spot exposed servers
+when = Spots exposed servers
 
 [scanners.http]
 name = HTTP / HTTPS
 what = Web servers and their titles
-when = Use to identify a device
+when = Tells you what a device is
 
 [scanners.rdp]
 name = RDP Scan
 what = Remote desktop hosts, port 3389
-when = Use to check open desktops
+when = Checking open desktops
 
 [capture]
 title = Capture a handshake

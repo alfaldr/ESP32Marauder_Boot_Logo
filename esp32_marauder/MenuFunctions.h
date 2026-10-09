@@ -397,7 +397,22 @@ Menu bootLogMenu;
   // Reference helpers. addNodes() is private, so these have to be members.
   // Reference. The index is a normal menu; each section is a text screen
   // drawn straight to the panel, one screen, no scrolling.
-  void drawHelpSection(const HelpId* ids, uint8_t count);
+  //
+  // A row pairs one catalogue field with the colour that says what role it
+  // plays on screen. Colour does the job the icons did before the text
+  // screen: title, mode name, description and "when to reach for it" stay
+  // told apart while scrolling, without a symbol on every line. HELP_ID_MAX
+  // is a deliberate blank line.
+  // "rule" draws a hairline instead of text. A blank line separates modes from
+  // each other; a rule separates the section title from the modes, so the two
+  // kinds of break are told apart at a glance instead of both being empty
+  // space the eye has to interpret.
+  struct HelpRow {
+    HelpId id;
+    uint16_t colour;
+    bool rule;
+  };
+  void drawHelpSection(const HelpRow* rows, uint8_t count);
   void showHelpSniffers();
   void showHelpAttacks();
   void showHelpScanners();

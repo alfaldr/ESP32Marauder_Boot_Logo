@@ -19,47 +19,47 @@ title = WiFi > Koklayicilar
 [sniffers.beacon]
 name = Beacon Tarama
 what = AP'leri listeler, beacon saklar
-when = Once hedef BSSID'i bulmak icin
+when = Ilk durak: BSSID'leri listeler
 
 [sniffers.eapol]
 name = EAPOL/PMKID Tara
 what = 4 yonlu anahtari kaydeder
-when = Bilinen bir AP icin kullanilir
+when = AP'yi zaten biliyorsan deger
 
 [sniffers.probe]
 name = Probe Istek Tarama
 what = Cihazlar ne ag ariyor
-when = Aranan aglari gormek icin
+when = Hangi aglar araniyor, onu ogrenmek
 
 [sniffers.deauth]
 name = Deauth Tarama
 what = Kim atiliyor, kim atiyor
-when = Bozucu bir AP fark etmek icin
+when = Bozucuya karsi ilk hamlen
 
 [sniffers.pkt]
 name = Paket Izleme
 what = Kanal basina paket sayar
-when = En sessiz kanal bulmak icin
+when = Sessiz kanal avinda
 
 [sniffers.chan]
 name = Kanal Analizi
 what = Tek kanal icin canli grafik
-when = Bir kanali izlemek icin
+when = Tek kanal izlenirken
 
 [sniffers.raw]
 name = Ham Kayit
 what = Her cerceve, filtresiz
-when = Neyin aranacagi belli degilken
+when = Hicbiri ise yaramadiysa
 
 [sniffers.sae]
 name = SAE Commit
 what = WPA3 el sikisma karsiligi
-when = Hedef ag WPA3 ise
+when = Hedef WPA3 konusuyorsa
 
 [sniffers.pine]
 name = Pineapple Bul
 what = Sahte AP'leri bulur
-when = Kendi mekanini denetlemek icin
+when = Kendi mekanini denetlerken
 
 [attacks]
 title = WiFi > Saldirilar
@@ -72,32 +72,32 @@ when = Yeniden baglanmayi zorlamak icin
 [attacks.targeted]
 name = Hedefli Deauth
 what = Yalnizca tek istemciyi atar
-when = Tek cihazi dusurmek icin
+when = Tek bir cihaz dusurulecekse
 
 [attacks.probe]
 name = Probe Istek Seli
 what = Cok sayida sahte ag ilan eder
-when = Istemci liste davranisini olcmek
+when = Liste olusturma davranisini izler
 
 [attacks.beacon]
 name = Beacon Spam
 what = Dosyadan beacon tekrarlar
-when = Beacon ayristirmasini test etmek
+when = Beacon ayristirmasini sinar
 
 [attacks.csa]
 name = Kanal Degistirme
 what = Baska kanala zorlar
-when = Istemci AP'yi izliyor mu
+when = Istemcinin uyup uymadigini gor
 
 [attacks.sae]
 name = SAE Commit Seli
 what = WPA3 dogrulamasini baslatir
-when = SAE akisini incelemek icin
+when = SAE akislarini incelemek icin
 
 [attacks.quiet]
 name = Sessiz Mod
 what = Hicbir sey gondermez
-when = Yan etkisiz pasif calisma icin
+when = Yan etkisiz pasif calisma
 
 [scanners]
 title = WiFi > Tarayicilar
@@ -115,7 +115,7 @@ when = Envanter cikarmak icin
 [scanners.telnet]
 name = Telnet Tarama
 what = 23. portun acik oldugunu bulur
-when = Yabanci cihaz bulmak icin
+when = Yabanci cihaz avinda
 
 [scanners.ssh]
 name = SSH Tarama
@@ -125,7 +125,7 @@ when = Acik sunuculari fark etmek
 [scanners.http]
 name = HTTP / HTTPS
 what = Web sunucularini ve basligini
-when = Cihazin ne oldugunu anlamak
+when = Cihazin ne oldugunu anlatir
 
 [scanners.rdp]
 name = RDP Tarama
