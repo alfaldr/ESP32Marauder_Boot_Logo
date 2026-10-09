@@ -250,12 +250,11 @@ void init() {
                     (unsigned)event.seq,
                     reasonName(event.reason),
                     duration,
-                    isClean(event.reason) ? "(temiz)" : "// ASCII only. The menu font covers 0x20..0x7E and TFT_eSPI indexes
-                      // its glyph table with no bounds check, so a code
-                      // point like S-cedilla reads past the end of the
-                      // table and picks up a garbage advance and height,
-                      // which is enough to overrun a frame.
-                      isClean(event.reason) ? "(temiz)" : "(ANORMAL DISI)")");
+      // ASCII only. The menu font covers 0x20..0x7E and TFT_eSPI
+      // indexes its glyph table with no bounds check, so a code point
+      // above 0x7E reads past the end of the table and picks up a
+      // garbage advance and height, which is enough to overrun a frame.
+      isClean(event.reason) ? "(temiz)" : "(ANORMAL DISI)");
     }
     Serial.print(F("[bootlog] ozet: "));
     Serial.println(g_note[0] ? g_note : "temiz");
