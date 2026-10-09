@@ -364,6 +364,21 @@ void MenuFunctions::main(uint32_t currentTime)
   #endif
 
 
+  // A reference section is a text screen, not a menu, so there is nothing to
+  // select. Any tap means "I have read enough" and goes back to the index. The
+  // brightness gesture below still works, since a tap that is not the index
+  // returns immediately.
+  #ifdef HAS_ILI9341
+    if (pressed && this->help_text_active) {
+      this->help_text_active = false;
+      this->buildHelpMenu();
+      this->changeMenu(&helpMenu, true);
+      x = -1;
+      y = -1;
+      return;
+    }
+  #endif
+
   // Brightness gesture: hold top or bottom zone 1.5s to enter brightness mode
   #ifdef HAS_ILI9341
     bool touching_menu_control = false;
@@ -2081,210 +2096,162 @@ void MenuFunctions::buildBootLogMenu() {
 // a short line keeps a whole topic on one screen where possible.
 // ---------------------------------------------------------------------------
 
-  // Reference pages.
+  // Reference, drawn as a scrolling-free text screen.
   //
-  // Structure lives here, text lives in lang/. Every label comes from the
-  // catalogue, which the generator wraps to the button's pixel width, so
-  // nothing scrolls sideways in any language. Rows are data, not literals, so
-  // a translator never has to match the code.
+  // This started as a list of menu buttons, which capped every line at the
+  // button's inner width, put an icon on each one, and needed a tap to read
+  // anything. The device info screen already does this job better: with
+  // setFreeFont(NULL) the default GLCD font puts six pixels in a cell, so the
+  // 240px panel holds 38 characters on each of 40 rows instead of 21 on 12
+  // button rows. gen_help.py wraps the catalogue to 38 characters and every
+  // section fits on one screen, so there is nothing to scroll.
   //
-  // Icons are functional, not decoration. The icon says what kind of line this
-  // is, which is what lets a glance down the page pick the mode names out from
-  // the description without reading either:
-  //
-  //   JOIN_WIFI   the route to the mode
-  //   category     the mode itself (SNIFFERS / ATTACKS / SCANNERS)
-  //   DEVICE_INFO  what it does
-  //   FORCE        when to reach for it, the one actionable line
-  //   EAPOL        a step of the capture flow
-  //
-  // These are members rather than free functions because addNodes() is
-  // private, and note that its fourth argument is the icon: a literal 0 is
-  // ATTACKS, not "no icon".
+  // HELP_ID_MAX in a section list means "blank line", which separates one mode
+  // from the next. Colour was dropped deliberately: queueLine() takes no
+  // colour argument, and drawing straight to the panel for it was not worth the
+  // extra code when a blank line separates entries just as well.
 
-  void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
-    menu->parentMenu = parent;
-    this->addNodes(menu, text09, TFTLIGHTGREY, 0, [this, menu]() {
-      this->changeMenu(menu->parentMenu, true);
-    });
-  }
+  void MenuFunctions::drawHelpSection(const HelpId *ids, uint8_t count) {
+    display_obj.tft.fillScreen(TFT_BLACK);
+    display_obj.tft.setTextWrap(false);
+    display_obj.tft.setFreeFont(NULL);
+    display_obj.tft.setTextSize(1);
+    display_obj.tft.setTextColor(TFT_WHITE);
 
-  void MenuFunctions::addRow(Menu *menu, HelpId id, uint8_t color, int icon) {
-    this->addNodes(menu, helpText(id), color, icon, []() {});
-  }
+    // Start below the status bar and leave a line of breathing room at the
+    // bottom so the last entry is not flush against the bezel.
+    int16_t y = STATUS_BAR_WIDTH + 6;
+    const int16_t limit = SCREEN_HEIGHT - 10;
 
-  void MenuFunctions::addRowLines(Menu *menu, HelpId base, uint8_t color,
-                                 int icon) {
-    const char *lines[6];
-    const uint8_t n = helpLines(base, lines, 6);
-    for (uint8_t i = 0; i < n; i++) {
-      this->addNodes(menu, lines[i], color, icon, []() {});
+    for (uint8_t i = 0; i < count; i++) {
+      if (ids[i] == HELP_ID_MAX) {
+        y += 8;
+        continue;
+      }
+      const char *lines[4];
+      const uint8_t n = helpLines(ids[i], lines, 4);
+      for (uint8_t j = 0; j < n; j++) {
+        if (y > limit) {
+          display_obj.tft.setCursor(0, y);
+          display_obj.tft.setTextColor(TFT_ORANGE);
+          display_obj.tft.println(F("(devami icin asagi kaydirin)"));
+          return;
+        }
+        display_obj.tft.setCursor(0, y);
+        display_obj.tft.println(lines[j]);
+        y += 8;
+      }
     }
   }
 
-  void MenuFunctions::addMode(Menu *menu, HelpId name, HelpId what, HelpId when,
-                              HelpId path, bool show_path, int category) {
-    if (show_path) this->addRow(menu, path, TFTLIGHTGREY, JOIN_WIFI);
-    this->addRow(menu, name, TFTWHITE, category);
-    this->addRowLines(menu, what, TFTLIGHTGREY, DEVICE_INFO);
-    if (when != (HelpId)0) this->addRowLines(menu, when, TFTORANGE, FORCE);
+  // A mode: name, what it does, when to reach for it.
+  #define HELP_MODE(prefix, suffix) \
+    H_##prefix##_##suffix##_NAME, H_##prefix##_##suffix##_WHAT, \
+    H_##prefix##_##suffix##_WHEN, HELP_ID_MAX
+
+  void MenuFunctions::showHelpSniffers() {
+    static const HelpId page[] = {
+        H_SNIFFERS_TITLE,
+        HELP_MODE(SNIFFERS, BEACON), HELP_MODE(SNIFFERS, EAPOL),
+        HELP_MODE(SNIFFERS, PROBE), HELP_MODE(SNIFFERS, DEAUTH),
+        HELP_MODE(SNIFFERS, PKT), HELP_MODE(SNIFFERS, CHAN),
+        HELP_MODE(SNIFFERS, RAW), HELP_MODE(SNIFFERS, SAE),
+        HELP_MODE(SNIFFERS, PINE),
+    };
+    this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
   }
 
-void MenuFunctions::buildHelpMenu() {
-  helpMenu.list->clear();
+  void MenuFunctions::showHelpAttacks() {
+    static const HelpId page[] = {
+        H_ATTACKS_TITLE,
+        HELP_MODE(ATTACKS, DEAUTH), HELP_MODE(ATTACKS, TARGETED),
+        HELP_MODE(ATTACKS, PROBE), HELP_MODE(ATTACKS, BEACON),
+        HELP_MODE(ATTACKS, CSA), HELP_MODE(ATTACKS, SAE),
+        HELP_MODE(ATTACKS, QUIET),
+    };
+    this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
+  }
 
-  // Language first: it changes every page below, so it belongs where it is
-  // noticed rather than buried in a submenu.
-  this->addNodes(&helpMenu, helpText(H_INDEX_LANG), TFTPURPLE, LANGUAGE, [this]() {
-    this->buildHelpLangMenu();
-    this->changeMenu(&helpLangMenu, true);
-  });
+  void MenuFunctions::showHelpScanners() {
+    static const HelpId page[] = {
+        H_SCANNERS_TITLE,
+        HELP_MODE(SCANNERS, PING), HELP_MODE(SCANNERS, ARP),
+        HELP_MODE(SCANNERS, TELNET), HELP_MODE(SCANNERS, SSH),
+        HELP_MODE(SCANNERS, HTTP), HELP_MODE(SCANNERS, RDP),
+    };
+    this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
+  }
 
-  this->addNodes(&helpMenu, helpText(H_SNIFFERS_TITLE), TFTWHITE, SNIFFERS, [this]() {
-    this->buildHelpScanMenu();
-    this->changeMenu(&helpScanMenu, true);
-  });
-  this->addNodes(&helpMenu, helpText(H_ATTACKS_TITLE), TFTWHITE, ATTACKS, [this]() {
-    this->buildHelpAttackMenu();
-    this->changeMenu(&helpAttackMenu, true);
-  });
-  this->addNodes(&helpMenu, helpText(H_SCANNERS_TITLE), TFTWHITE, SCANNERS, [this]() {
-    this->buildHelpScannerMenu();
-    this->changeMenu(&helpScannerMenu, true);
-  });
-  this->addNodes(&helpMenu, helpText(H_CAPTURE_TITLE), TFTORANGE, EAPOL, [this]() {
-    this->buildHelpCaptureMenu();
-    this->changeMenu(&helpCaptureMenu, true);
-  });
-  this->addNodes(&helpMenu, helpText(H_TERMS_TITLE), TFTWHITE, GENERAL_APPS, [this]() {
-    this->buildHelpTermsMenu();
-    this->changeMenu(&helpTermsMenu, true);
-  });
+  void MenuFunctions::showHelpCapture() {
+    static const HelpId page[] = {
+        H_CAPTURE_TITLE, HELP_ID_MAX,
+        H_CAPTURE_STEP1_A, H_CAPTURE_STEP2_A, H_CAPTURE_STEP3_A,
+        H_CAPTURE_STEP4_A, H_CAPTURE_STEP5_A, H_CAPTURE_STEP6_A,
+        H_CAPTURE_STEP7_A, H_CAPTURE_STEP8_A,
+    };
+    this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
+  }
 
-  addBackNode(&helpMenu, &deviceMenu);
-}
+  void MenuFunctions::showHelpTerms() {
+    static const HelpId page[] = {
+        H_TERMS_TITLE, HELP_ID_MAX,
+        H_TERMS_EAPOL_A, H_TERMS_SAE_A, H_TERMS_PMKID_A,
+        H_TERMS_BSSID_A, H_TERMS_SSID_A, H_TERMS_PROMISCUOUS_A,
+        H_TERMS_DEAUTH_A, H_TERMS_PCAPNG_A, H_TERMS_PCAP_A,
+    };
+    this->drawHelpSection(page, sizeof(page) / sizeof(page[0]));
+  }
 
-void MenuFunctions::buildHelpLangMenu() {
-  helpLangMenu.list->clear();
-  for (uint8_t i = 0; i < LANG_COUNT; i++) {
-    const HelpLang lang = (HelpLang)i;
-    const bool active = (helpGetLang() == lang);
-    this->addNodes(&helpLangMenu, helpLangLabel(lang),
-                   active ? TFTGREEN : TFTLIGHTGREY, 0, [this, lang]() {
-      helpSetLang(lang);
-      // Rebuild every page so the switch is visible immediately on the way
-      // back up, not the next time it is opened.
-      this->buildHelpMenu();
-      this->buildHelpScanMenu();
-      this->buildHelpAttackMenu();
-      this->buildHelpScannerMenu();
-      this->buildHelpCaptureMenu();
-      this->buildHelpTermsMenu();
-      this->changeMenu(&helpMenu, true);
+  #undef HELP_MODE
+
+  void MenuFunctions::buildHelpMenu() {
+    helpMenu.list->clear();
+
+    this->addNodes(&helpMenu, helpText(H_INDEX_LANG), TFTPURPLE, LANGUAGE, [this]() {
+      this->buildHelpLangMenu();
+      this->changeMenu(&helpLangMenu, true);
     });
+    this->addNodes(&helpMenu, helpText(H_SNIFFERS_TITLE), TFTWHITE, SNIFFERS, [this]() {
+      this->help_text_active = true;
+      this->showHelpSniffers();
+    });
+    this->addNodes(&helpMenu, helpText(H_ATTACKS_TITLE), TFTWHITE, ATTACKS, [this]() {
+      this->help_text_active = true;
+      this->showHelpAttacks();
+    });
+    this->addNodes(&helpMenu, helpText(H_SCANNERS_TITLE), TFTWHITE, SCANNERS, [this]() {
+      this->help_text_active = true;
+      this->showHelpScanners();
+    });
+    this->addNodes(&helpMenu, helpText(H_CAPTURE_TITLE), TFTORANGE, EAPOL, [this]() {
+      this->help_text_active = true;
+      this->showHelpCapture();
+    });
+    this->addNodes(&helpMenu, helpText(H_TERMS_TITLE), TFTWHITE, GENERAL_APPS, [this]() {
+      this->help_text_active = true;
+      this->showHelpTerms();
+    });
+
+    addBackNode(&helpMenu, &deviceMenu);
   }
-  addBackNode(&helpLangMenu, &helpMenu);
-}
 
-void MenuFunctions::buildHelpScanMenu() {
-  helpScanMenu.list->clear();
+  void MenuFunctions::buildHelpLangMenu() {
+    helpLangMenu.list->clear();
+    for (uint8_t i = 0; i < LANG_COUNT; i++) {
+      const HelpLang lang = (HelpLang)i;
+      const bool active = (helpGetLang() == lang);
+      this->addNodes(&helpLangMenu, helpLangLabel(lang),
+                     active ? TFTGREEN : TFTLIGHTGREY, 0, [this, lang]() {
+        helpSetLang(lang);
+        // Rebuild so the switch is visible on the way back up rather than the
+        // next time the reference is opened.
+        this->buildHelpMenu();
+        this->changeMenu(&helpMenu, true);
+      });
+    }
+    addBackNode(&helpLangMenu, &helpMenu);
+  }
 
-  addMode(&helpScanMenu, H_SNIFFERS_BEACON_NAME, H_SNIFFERS_BEACON_WHAT,
-          H_SNIFFERS_BEACON_WHEN, H_SNIFFERS_PATH, true, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_EAPOL_NAME, H_SNIFFERS_EAPOL_WHAT,
-          H_SNIFFERS_EAPOL_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_PROBE_NAME, H_SNIFFERS_PROBE_WHAT,
-          H_SNIFFERS_PROBE_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_DEAUTH_NAME, H_SNIFFERS_DEAUTH_WHAT,
-          H_SNIFFERS_DEAUTH_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_PKT_NAME, H_SNIFFERS_PKT_WHAT,
-          H_SNIFFERS_PKT_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_CHAN_NAME, H_SNIFFERS_CHAN_WHAT,
-          H_SNIFFERS_CHAN_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_RAW_NAME, H_SNIFFERS_RAW_WHAT,
-          H_SNIFFERS_RAW_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_SAE_NAME, H_SNIFFERS_SAE_WHAT,
-          H_SNIFFERS_SAE_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-  addMode(&helpScanMenu, H_SNIFFERS_PINE_NAME, H_SNIFFERS_PINE_WHAT,
-          H_SNIFFERS_PINE_WHEN, H_SNIFFERS_PATH, false, SNIFFERS);
-
-  addRowLines(&helpScanMenu, H_SNIFFERS_NOTE, TFTGREEN, DEVICE_INFO);
-  addBackNode(&helpScanMenu, &helpMenu);
-}
-
-void MenuFunctions::buildHelpAttackMenu() {
-  helpAttackMenu.list->clear();
-
-  addMode(&helpAttackMenu, H_ATTACKS_DEAUTH_NAME, H_ATTACKS_DEAUTH_WHAT,
-          H_ATTACKS_DEAUTH_WHEN, H_ATTACKS_PATH, true, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_TARGETED_NAME, H_ATTACKS_TARGETED_WHAT,
-          H_ATTACKS_TARGETED_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_PROBE_NAME, H_ATTACKS_PROBE_WHAT,
-          H_ATTACKS_PROBE_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_BEACON_NAME, H_ATTACKS_BEACON_WHAT,
-          H_ATTACKS_BEACON_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_CSA_NAME, H_ATTACKS_CSA_WHAT,
-          H_ATTACKS_CSA_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_SAE_NAME, H_ATTACKS_SAE_WHAT,
-          H_ATTACKS_SAE_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-  addMode(&helpAttackMenu, H_ATTACKS_QUIET_NAME, H_ATTACKS_QUIET_WHAT,
-          H_ATTACKS_QUIET_WHEN, H_ATTACKS_PATH, false, ATTACKS);
-
-  addRowLines(&helpAttackMenu, H_ATTACKS_NOTE, TFTRED, ATTACKS);
-  addBackNode(&helpAttackMenu, &helpMenu);
-}
-
-void MenuFunctions::buildHelpScannerMenu() {
-  helpScannerMenu.list->clear();
-
-  addMode(&helpScannerMenu, H_SCANNERS_PING_NAME, H_SCANNERS_PING_WHAT,
-          H_SCANNERS_PING_WHEN, H_SCANNERS_PATH, true, SCANNERS);
-  addMode(&helpScannerMenu, H_SCANNERS_ARP_NAME, H_SCANNERS_ARP_WHAT,
-          H_SCANNERS_ARP_WHEN, H_SCANNERS_PATH, false, SCANNERS);
-  addMode(&helpScannerMenu, H_SCANNERS_TELNET_NAME, H_SCANNERS_TELNET_WHAT,
-          H_SCANNERS_TELNET_WHEN, H_SCANNERS_PATH, false, SCANNERS);
-  addMode(&helpScannerMenu, H_SCANNERS_SSH_NAME, H_SCANNERS_SSH_WHAT,
-          H_SCANNERS_SSH_WHEN, H_SCANNERS_PATH, false, SCANNERS);
-  addMode(&helpScannerMenu, H_SCANNERS_HTTP_NAME, H_SCANNERS_HTTP_WHAT,
-          H_SCANNERS_HTTP_WHEN, H_SCANNERS_PATH, false, SCANNERS);
-  addMode(&helpScannerMenu, H_SCANNERS_RDP_NAME, H_SCANNERS_RDP_WHAT,
-          H_SCANNERS_RDP_WHEN, H_SCANNERS_PATH, false, SCANNERS);
-
-  addRowLines(&helpScannerMenu, H_SCANNERS_NOTE, TFTGREEN, SCANNERS);
-  addBackNode(&helpScannerMenu, &helpMenu);
-}
-
-void MenuFunctions::buildHelpCaptureMenu() {
-  helpCaptureMenu.list->clear();
-
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP1, TFTWHITE, EAPOL);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP2, TFTLIGHTGREY, DEVICE_INFO);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP3, TFTWHITE, EAPOL);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP4, TFTLIGHTGREY, DEVICE_INFO);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP5, TFTWHITE, EAPOL);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP6, TFTLIGHTGREY, DEVICE_INFO);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP7, TFTWHITE, EAPOL);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP8, TFTLIGHTGREY, DEVICE_INFO);
-  addRowLines(&helpCaptureMenu, H_CAPTURE_STEP9, TFTORANGE, FORCE);
-
-  addBackNode(&helpCaptureMenu, &helpMenu);
-}
-
-void MenuFunctions::buildHelpTermsMenu() {
-  helpTermsMenu.list->clear();
-
-  addRowLines(&helpTermsMenu, H_TERMS_EAPOL_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_SAE_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_PMKID_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_BSSID_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_SSID_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_PROMISCUOUS_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_DEAUTH_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_PCAPNG_A, TFTWHITE, DEVICE_INFO);
-  addRowLines(&helpTermsMenu, H_TERMS_PCAP_A, TFTWHITE, DEVICE_INFO);
-
-  addBackNode(&helpTermsMenu, &helpMenu);
-}
 void MenuFunctions::RunSetup()
 {
   extern LinkedList<AccessPoint>* access_points;

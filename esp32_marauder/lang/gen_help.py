@@ -18,8 +18,8 @@ menu clips anything wider than HELP_LINE_MAX and scrolls it sideways. Hand
 wrapping silently regresses the moment a sentence is edited, so it happens here
 and CI fails the build if anything cannot fit.
 
-Every wrapped line gets its own id (H_X, H_X_2, H_X_3, ...) so the menu adds
-one node per line and nothing ever scrolls.
+Every wrapped line gets its own id (H_X, H_X_2, H_X_3, ...) so the text screen
+adds one line at a time and nothing ever scrolls sideways.
 
 Outputs HelpLang_gen.h (enum + helpLines) and HelpLang_gen.cpp (pool + table).
 
@@ -33,33 +33,25 @@ from collections import OrderedDict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Usable width inside a CYD menu button: KEY_W 240 - 2 x BUTTON_PADDING 22.
-# Changing either constant in configs.h means changing this.
-WIDTH_PX = 196
-
-# Advance width per glyph, in pixels, for the menu font (FreeSans9pt7b).
-# Read straight out of the font's Glyphs table in Bodmer/TFT_eSPI. Wrapping by
-# character count would be wrong: 'W' costs 17px while 'i' costs 4px, so the
-# same line length can overflow or waste most of the row depending on the
-# letters in it.
-ADVANCE = {}
-for _pair in (
-        "20:5,21:6,22:6,23:10,24:10,25:16,26:12,27:4,28:6,29:6,2A:7,2B:11,2C:5,"
-        "2D:6,2E:5,2F:5,30:10,31:10,32:10,33:10,34:10,35:10,36:10,37:10,38:10,"
-        "39:10,3A:5,3B:5,3C:11,3D:11,3E:11,3F:10,40:18,41:12,42:12,43:13,44:13,"
-        "45:11,46:11,47:14,48:13,49:5,4A:10,4B:12,4C:10,4D:15,4E:13,4F:14,50:12,"
-        "51:14,52:13,53:12,54:11,55:13,56:12,57:17,58:12,59:12,5A:11,5B:5,5C:5,"
-        "5D:5,5E:8,5F:10,60:5,61:10,62:10,63:9,64:10,65:10,66:5,67:10,68:10,69:4,"
-        "6A:4,6B:9,6C:4,6D:15,6E:10,6F:10,70:10,71:10,72:6,73:9,74:5,75:10,76:9,"
-        "77:13,78:9,79:9,7A:9,7B:6,7C:4,7D:6").split(","):
-    _c, _w = _pair.split(":")
-    ADVANCE[int(_c, 16)] = int(_w)
-
-DEFAULT_ADVANCE = ADVANCE[ord("?")]
+# The reference is a scrolling text screen, drawn the same way the device info
+# screen is: setFreeFont(NULL), the default GLCD font, six pixels per cell.
+# SCREEN_WIDTH is 240, so a full row is 40 cells; leave two cells of margin so a
+# line never touches the bezel.
+#
+# Every printable glyph in that font is exactly six pixels wide, which is why a
+# pixel budget and a character budget are the same number here. It used to wrap
+# against FreeSans9pt7b's per-glyph advances for the menu buttons; that font is
+# no longer involved in this text.
+CELL_PX = 6
+MARGIN_CELLS = 2
+WIDTH_CELLS = (240 // CELL_PX) - MARGIN_CELLS
+WIDTH_PX = WIDTH_CELLS * CELL_PX
 
 
 def text_px(s):
-    return sum(ADVANCE.get(ord(c), DEFAULT_ADVANCE) for c in s)
+    return len(s) * CELL_PX
+
+
 
 LANGS = OrderedDict([
     ("LANG_EN", "help.en.txt"),
@@ -81,8 +73,6 @@ def split_path(word, width):
     cur = ""
     for i, p in enumerate(pieces):
         piece = p + ">" if i < len(pieces) - 1 else p
-        if text_px(piece) > width:
-            return None
         if not cur:
             cur = piece
         elif text_px(cur + piece) <= width:
@@ -116,8 +106,6 @@ def wrap(text, width):
     lines, cur = [], ""
     for w in tokens:
         if not cur:
-            if text_px(w) > width:
-                return None
             cur = w
         elif text_px(cur + " " + w) <= width:
             cur += " " + w
@@ -197,7 +185,7 @@ def main():
                 wrapped = wrap(s, WIDTH_PX)
                 if wrapped is None:
                     problems.append("%s %s: a word cannot fit in %d pixels"
-                                    % (lang, key, WIDTH_PX))
+                                    % (lang, key, WIDTH_CELLS))
                     wrapped = [s]
                 lines.extend(wrapped)
             rows[key] = lines
@@ -333,11 +321,11 @@ def main():
 
     print("HelpLang_gen.h: %d ids, %d strings, %d bytes of pool"
           % (len(flat), len(pool), sum(len(p) + 1 for p in pool)))
-    print("width limit %d px" % WIDTH_PX)
+    print("width limit %d chars (%d px)" % (WIDTH_CELLS, WIDTH_PX))
     for lang in table:
         widest = max((text_px(l) for rows in expanded[lang].values()
                       for l in rows), default=0)
-        print("  %-8s widest line %d px" % (lang, widest))
+        print("  %-8s longest line %d chars (%d px)" % (lang, widest, text_px("x" * widest)))
 
 if __name__ == "__main__":
     main()

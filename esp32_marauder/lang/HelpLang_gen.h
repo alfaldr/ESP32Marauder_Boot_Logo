@@ -13,187 +13,100 @@ enum HelpId : uint16_t {
   H_INDEX_TITLE = 0,
   H_INDEX_LANG = 1,
   H_SNIFFERS_TITLE = 2,
-  H_SNIFFERS_PATH = 3,
-  H_SNIFFERS_NOTE = 4,
-  H_SNIFFERS_NOTE_2 = 5,
-  H_SNIFFERS_BEACON_NAME = 6,
-  H_SNIFFERS_BEACON_WHAT = 7,
-  H_SNIFFERS_BEACON_WHAT_2 = 8,
-  H_SNIFFERS_BEACON_WHAT_3 = 9,
-  H_SNIFFERS_BEACON_WHEN = 10,
-  H_SNIFFERS_BEACON_WHEN_2 = 11,
-  H_SNIFFERS_EAPOL_NAME = 12,
-  H_SNIFFERS_EAPOL_WHAT = 13,
-  H_SNIFFERS_EAPOL_WHAT_2 = 14,
-  H_SNIFFERS_EAPOL_WHAT_3 = 15,
-  H_SNIFFERS_EAPOL_WHEN = 16,
-  H_SNIFFERS_EAPOL_WHEN_2 = 17,
-  H_SNIFFERS_PROBE_NAME = 18,
-  H_SNIFFERS_PROBE_WHAT = 19,
-  H_SNIFFERS_PROBE_WHAT_2 = 20,
-  H_SNIFFERS_PROBE_WHEN = 21,
-  H_SNIFFERS_PROBE_WHEN_2 = 22,
-  H_SNIFFERS_DEAUTH_NAME = 23,
-  H_SNIFFERS_DEAUTH_WHAT = 24,
-  H_SNIFFERS_DEAUTH_WHAT_2 = 25,
-  H_SNIFFERS_DEAUTH_WHEN = 26,
-  H_SNIFFERS_DEAUTH_WHEN_2 = 27,
-  H_SNIFFERS_PKT_NAME = 28,
-  H_SNIFFERS_PKT_WHAT = 29,
-  H_SNIFFERS_PKT_WHAT_2 = 30,
-  H_SNIFFERS_PKT_WHEN = 31,
-  H_SNIFFERS_PKT_WHEN_2 = 32,
-  H_SNIFFERS_CHAN_NAME = 33,
-  H_SNIFFERS_CHAN_WHAT = 34,
-  H_SNIFFERS_CHAN_WHAT_2 = 35,
-  H_SNIFFERS_CHAN_WHEN = 36,
-  H_SNIFFERS_CHAN_WHEN_2 = 37,
-  H_SNIFFERS_RAW_NAME = 38,
-  H_SNIFFERS_RAW_WHAT = 39,
-  H_SNIFFERS_RAW_WHAT_2 = 40,
-  H_SNIFFERS_RAW_WHEN = 41,
-  H_SNIFFERS_RAW_WHEN_2 = 42,
-  H_SNIFFERS_SAE_NAME = 43,
-  H_SNIFFERS_SAE_WHAT = 44,
-  H_SNIFFERS_SAE_WHAT_2 = 45,
-  H_SNIFFERS_SAE_WHEN = 46,
-  H_SNIFFERS_SAE_WHEN_2 = 47,
-  H_SNIFFERS_PINE_NAME = 48,
-  H_SNIFFERS_PINE_WHAT = 49,
-  H_SNIFFERS_PINE_WHAT_2 = 50,
-  H_SNIFFERS_PINE_WHEN = 51,
-  H_SNIFFERS_PINE_WHEN_2 = 52,
-  H_ATTACKS_TITLE = 53,
-  H_ATTACKS_PATH = 54,
-  H_ATTACKS_NOTE = 55,
-  H_ATTACKS_NOTE_2 = 56,
-  H_ATTACKS_DEAUTH_NAME = 57,
-  H_ATTACKS_DEAUTH_WHAT = 58,
-  H_ATTACKS_DEAUTH_WHAT_2 = 59,
-  H_ATTACKS_DEAUTH_WHEN = 60,
-  H_ATTACKS_DEAUTH_WHEN_2 = 61,
-  H_ATTACKS_DEAUTH_WHEN_3 = 62,
-  H_ATTACKS_TARGETED_NAME = 63,
-  H_ATTACKS_TARGETED_WHAT = 64,
-  H_ATTACKS_TARGETED_WHAT_2 = 65,
-  H_ATTACKS_TARGETED_WHEN = 66,
-  H_ATTACKS_TARGETED_WHEN_2 = 67,
-  H_ATTACKS_PROBE_NAME = 68,
-  H_ATTACKS_PROBE_WHAT = 69,
-  H_ATTACKS_PROBE_WHAT_2 = 70,
-  H_ATTACKS_PROBE_WHEN = 71,
-  H_ATTACKS_PROBE_WHEN_2 = 72,
-  H_ATTACKS_BEACON_NAME = 73,
-  H_ATTACKS_BEACON_WHAT = 74,
-  H_ATTACKS_BEACON_WHAT_2 = 75,
-  H_ATTACKS_BEACON_WHEN = 76,
-  H_ATTACKS_BEACON_WHEN_2 = 77,
-  H_ATTACKS_CSA_NAME = 78,
-  H_ATTACKS_CSA_WHAT = 79,
-  H_ATTACKS_CSA_WHAT_2 = 80,
-  H_ATTACKS_CSA_WHEN = 81,
-  H_ATTACKS_CSA_WHEN_2 = 82,
-  H_ATTACKS_SAE_NAME = 83,
-  H_ATTACKS_SAE_WHAT = 84,
-  H_ATTACKS_SAE_WHAT_2 = 85,
-  H_ATTACKS_SAE_WHEN = 86,
-  H_ATTACKS_SAE_WHEN_2 = 87,
-  H_ATTACKS_QUIET_NAME = 88,
-  H_ATTACKS_QUIET_WHAT = 89,
-  H_ATTACKS_QUIET_WHAT_2 = 90,
-  H_ATTACKS_QUIET_WHEN = 91,
-  H_ATTACKS_QUIET_WHEN_2 = 92,
-  H_SCANNERS_TITLE = 93,
-  H_SCANNERS_PATH = 94,
-  H_SCANNERS_NOTE = 95,
-  H_SCANNERS_NOTE_2 = 96,
-  H_SCANNERS_NOTE_3 = 97,
-  H_SCANNERS_PING_NAME = 98,
-  H_SCANNERS_PING_WHAT = 99,
-  H_SCANNERS_PING_WHAT_2 = 100,
-  H_SCANNERS_PING_WHEN = 101,
-  H_SCANNERS_PING_WHEN_2 = 102,
-  H_SCANNERS_ARP_NAME = 103,
-  H_SCANNERS_ARP_WHAT = 104,
-  H_SCANNERS_ARP_WHAT_2 = 105,
-  H_SCANNERS_ARP_WHEN = 106,
-  H_SCANNERS_ARP_WHEN_2 = 107,
-  H_SCANNERS_TELNET_NAME = 108,
-  H_SCANNERS_TELNET_WHAT = 109,
-  H_SCANNERS_TELNET_WHAT_2 = 110,
-  H_SCANNERS_TELNET_WHEN = 111,
-  H_SCANNERS_TELNET_WHEN_2 = 112,
-  H_SCANNERS_TELNET_WHEN_3 = 113,
-  H_SCANNERS_SSH_NAME = 114,
-  H_SCANNERS_SSH_WHAT = 115,
-  H_SCANNERS_SSH_WHAT_2 = 116,
-  H_SCANNERS_SSH_WHEN = 117,
-  H_SCANNERS_SSH_WHEN_2 = 118,
-  H_SCANNERS_HTTP_NAME = 119,
-  H_SCANNERS_HTTP_WHAT = 120,
-  H_SCANNERS_HTTP_WHAT_2 = 121,
-  H_SCANNERS_HTTP_WHEN = 122,
-  H_SCANNERS_HTTP_WHEN_2 = 123,
-  H_SCANNERS_HTTP_WHEN_3 = 124,
-  H_SCANNERS_RDP_NAME = 125,
-  H_SCANNERS_RDP_WHAT = 126,
-  H_SCANNERS_RDP_WHAT_2 = 127,
-  H_SCANNERS_RDP_WHAT_3 = 128,
-  H_SCANNERS_RDP_WHEN = 129,
-  H_SCANNERS_RDP_WHEN_2 = 130,
-  H_CAPTURE_TITLE = 131,
-  H_CAPTURE_STEP1 = 132,
-  H_CAPTURE_STEP1_2 = 133,
-  H_CAPTURE_STEP1_3 = 134,
-  H_CAPTURE_STEP2 = 135,
-  H_CAPTURE_STEP2_2 = 136,
-  H_CAPTURE_STEP3 = 137,
-  H_CAPTURE_STEP3_2 = 138,
-  H_CAPTURE_STEP3_3 = 139,
-  H_CAPTURE_STEP4 = 140,
-  H_CAPTURE_STEP4_2 = 141,
-  H_CAPTURE_STEP5 = 142,
-  H_CAPTURE_STEP5_2 = 143,
-  H_CAPTURE_STEP5_3 = 144,
-  H_CAPTURE_STEP6 = 145,
-  H_CAPTURE_STEP6_2 = 146,
-  H_CAPTURE_STEP6_3 = 147,
-  H_CAPTURE_STEP7 = 148,
-  H_CAPTURE_STEP7_2 = 149,
-  H_CAPTURE_STEP8 = 150,
-  H_CAPTURE_STEP8_2 = 151,
-  H_CAPTURE_STEP8_3 = 152,
-  H_CAPTURE_STEP9 = 153,
-  H_CAPTURE_STEP9_2 = 154,
-  H_CAPTURE_STEP9_3 = 155,
-  H_CAPTURE_STEP9_4 = 156,
-  H_TERMS_TITLE = 157,
-  H_TERMS_EAPOL_A = 158,
-  H_TERMS_EAPOL_A_2 = 159,
-  H_TERMS_EAPOL_A_3 = 160,
-  H_TERMS_SAE_A = 161,
-  H_TERMS_SAE_A_2 = 162,
-  H_TERMS_SAE_A_3 = 163,
-  H_TERMS_PMKID_A = 164,
-  H_TERMS_PMKID_A_2 = 165,
-  H_TERMS_BSSID_A = 166,
-  H_TERMS_BSSID_A_2 = 167,
-  H_TERMS_BSSID_A_3 = 168,
-  H_TERMS_SSID_A = 169,
-  H_TERMS_PROMISCUOUS_A = 170,
-  H_TERMS_PROMISCUOUS_A_2 = 171,
-  H_TERMS_PROMISCUOUS_A_3 = 172,
-  H_TERMS_PROMISCUOUS_A_4 = 173,
-  H_TERMS_DEAUTH_A = 174,
-  H_TERMS_DEAUTH_A_2 = 175,
-  H_TERMS_DEAUTH_A_3 = 176,
-  H_TERMS_PCAPNG_A = 177,
-  H_TERMS_PCAPNG_A_2 = 178,
-  H_TERMS_PCAPNG_A_3 = 179,
-  H_TERMS_PCAP_A = 180,
-  H_TERMS_PCAP_A_2 = 181,
-  H_TERMS_PCAP_A_3 = 182,
-  HELP_ID_MAX = 183
+  H_SNIFFERS_BEACON_NAME = 3,
+  H_SNIFFERS_BEACON_WHAT = 4,
+  H_SNIFFERS_BEACON_WHEN = 5,
+  H_SNIFFERS_EAPOL_NAME = 6,
+  H_SNIFFERS_EAPOL_WHAT = 7,
+  H_SNIFFERS_EAPOL_WHEN = 8,
+  H_SNIFFERS_PROBE_NAME = 9,
+  H_SNIFFERS_PROBE_WHAT = 10,
+  H_SNIFFERS_PROBE_WHEN = 11,
+  H_SNIFFERS_DEAUTH_NAME = 12,
+  H_SNIFFERS_DEAUTH_WHAT = 13,
+  H_SNIFFERS_DEAUTH_WHEN = 14,
+  H_SNIFFERS_PKT_NAME = 15,
+  H_SNIFFERS_PKT_WHAT = 16,
+  H_SNIFFERS_PKT_WHEN = 17,
+  H_SNIFFERS_CHAN_NAME = 18,
+  H_SNIFFERS_CHAN_WHAT = 19,
+  H_SNIFFERS_CHAN_WHEN = 20,
+  H_SNIFFERS_RAW_NAME = 21,
+  H_SNIFFERS_RAW_WHAT = 22,
+  H_SNIFFERS_RAW_WHEN = 23,
+  H_SNIFFERS_SAE_NAME = 24,
+  H_SNIFFERS_SAE_WHAT = 25,
+  H_SNIFFERS_SAE_WHEN = 26,
+  H_SNIFFERS_PINE_NAME = 27,
+  H_SNIFFERS_PINE_WHAT = 28,
+  H_SNIFFERS_PINE_WHEN = 29,
+  H_ATTACKS_TITLE = 30,
+  H_ATTACKS_DEAUTH_NAME = 31,
+  H_ATTACKS_DEAUTH_WHAT = 32,
+  H_ATTACKS_DEAUTH_WHEN = 33,
+  H_ATTACKS_TARGETED_NAME = 34,
+  H_ATTACKS_TARGETED_WHAT = 35,
+  H_ATTACKS_TARGETED_WHEN = 36,
+  H_ATTACKS_PROBE_NAME = 37,
+  H_ATTACKS_PROBE_WHAT = 38,
+  H_ATTACKS_PROBE_WHEN = 39,
+  H_ATTACKS_BEACON_NAME = 40,
+  H_ATTACKS_BEACON_WHAT = 41,
+  H_ATTACKS_BEACON_WHEN = 42,
+  H_ATTACKS_CSA_NAME = 43,
+  H_ATTACKS_CSA_WHAT = 44,
+  H_ATTACKS_CSA_WHEN = 45,
+  H_ATTACKS_SAE_NAME = 46,
+  H_ATTACKS_SAE_WHAT = 47,
+  H_ATTACKS_SAE_WHEN = 48,
+  H_ATTACKS_QUIET_NAME = 49,
+  H_ATTACKS_QUIET_WHAT = 50,
+  H_ATTACKS_QUIET_WHEN = 51,
+  H_SCANNERS_TITLE = 52,
+  H_SCANNERS_PING_NAME = 53,
+  H_SCANNERS_PING_WHAT = 54,
+  H_SCANNERS_PING_WHEN = 55,
+  H_SCANNERS_ARP_NAME = 56,
+  H_SCANNERS_ARP_WHAT = 57,
+  H_SCANNERS_ARP_WHEN = 58,
+  H_SCANNERS_TELNET_NAME = 59,
+  H_SCANNERS_TELNET_WHAT = 60,
+  H_SCANNERS_TELNET_WHEN = 61,
+  H_SCANNERS_SSH_NAME = 62,
+  H_SCANNERS_SSH_WHAT = 63,
+  H_SCANNERS_SSH_WHEN = 64,
+  H_SCANNERS_HTTP_NAME = 65,
+  H_SCANNERS_HTTP_WHAT = 66,
+  H_SCANNERS_HTTP_WHEN = 67,
+  H_SCANNERS_RDP_NAME = 68,
+  H_SCANNERS_RDP_WHAT = 69,
+  H_SCANNERS_RDP_WHEN = 70,
+  H_CAPTURE_TITLE = 71,
+  H_CAPTURE_STEP1_A = 72,
+  H_CAPTURE_STEP1_A_2 = 73,
+  H_CAPTURE_STEP2_A = 74,
+  H_CAPTURE_STEP3_A = 75,
+  H_CAPTURE_STEP4_A = 76,
+  H_CAPTURE_STEP5_A = 77,
+  H_CAPTURE_STEP6_A = 78,
+  H_CAPTURE_STEP7_A = 79,
+  H_CAPTURE_STEP8_A = 80,
+  H_TERMS_TITLE = 81,
+  H_TERMS_EAPOL_A = 82,
+  H_TERMS_EAPOL_A_2 = 83,
+  H_TERMS_SAE_A = 84,
+  H_TERMS_SAE_A_2 = 85,
+  H_TERMS_PMKID_A = 86,
+  H_TERMS_BSSID_A = 87,
+  H_TERMS_SSID_A = 88,
+  H_TERMS_PROMISCUOUS_A = 89,
+  H_TERMS_PROMISCUOUS_A_2 = 90,
+  H_TERMS_DEAUTH_A = 91,
+  H_TERMS_DEAUTH_A_2 = 92,
+  H_TERMS_PCAPNG_A = 93,
+  H_TERMS_PCAP_A = 94,
+  H_TERMS_PCAP_A_2 = 95,
+  HELP_ID_MAX = 96
 };
 
 namespace help_gen {
@@ -205,362 +118,200 @@ inline const char kPool[] PROGMEM =
   "Quick Reference\0"
   "Language\0"
   "WiFi > Sniffers\0"
-  "WiFi>Sniffers>\0"
-  "Sniffers only listen,\0"
-  "nothing is sent.\0"
   "Beacon Sniff\0"
-  "Lists nearby access\0"
-  "points and keeps one\0"
-  "beacon each.\0"
-  "Use it first, to find the\0"
-  "BSSID you want.\0"
+  "Lists nearby APs, keeps one beacon\0"
+  "Use first, to find a BSSID\0"
   "EAPOL/PMKID Scan\0"
-  "Saves the four-way keys\0"
-  "and sends deauth too.\0"
-  "\0"
-  "Use it for the keys of a\0"
-  "known AP.\0"
+  "Saves 4-way keys, sends deauth too\0"
+  "Use for a known AP\0"
   "Probe Request Sniff\0"
-  "Shows what devices are\0"
-  "looking for.\0"
-  "Use it to see which\0"
-  "networks are sought.\0"
+  "What devices are looking for\0"
+  "Use to see networks sought\0"
   "Deauth Sniff\0"
-  "Shows who is being\0"
-  "kicked and by whom.\0"
-  "Use it to spot a jammer\0"
-  "or a bully AP.\0"
+  "Who is kicked, and by whom\0"
+  "Use to spot a jammer\0"
   "Packet Monitor\0"
-  "Counts packets per\0"
-  "channel.\0"
-  "Use it to find the\0"
-  "quietest channel.\0"
+  "Counts packets per channel\0"
+  "Use to find a quiet channel\0"
   "Channel Analyzer\0"
-  "Live traffic graph for one\0"
-  "Use it to watch a\0"
-  "channel over time.\0"
+  "Live traffic graph, one channel\0"
+  "Use to watch a channel\0"
   "Raw Capture\0"
-  "Saves every frame with\0"
-  "no filter.\0"
-  "Use it when you are not\0"
-  "sure what to look for.\0"
+  "Every frame, nothing filtered\0"
+  "Use when unsure what to seek\0"
   "SAE Commit\0"
-  "The WPA3 equivalent of\0"
-  "a handshake.\0"
-  "Use it when the target\0"
-  "network is WPA3.\0"
+  "The WPA3 handshake equivalent\0"
+  "Use when the target is WPA3\0"
   "Detect Pineapple\0"
-  "Finds rogue APs that\0"
-  "clone a real one.\0"
-  "Use it to audit a venue\0"
-  "you control.\0"
+  "Finds rogue APs cloning a real one\0"
+  "Use to audit your own venue\0"
   "WiFi > Attacks\0"
-  "WiFi>Attacks>\0"
-  "Attacks transmit. Own\0"
-  "network only.\0"
   "Deauth Flood\0"
-  "Kicks every client off the\0"
-  "access point.\0"
-  "Use it to force a client to\0"
-  "reconnect.\0"
+  "Kicks every client off the AP\0"
+  "Use to force a reconnection\0"
   "Deauth Targeted\0"
-  "Kicks one chosen client\0"
-  "only.\0"
-  "Use it to drop a single\0"
-  "device quietly.\0"
+  "Kicks one chosen client only\0"
+  "Use to drop a single device\0"
   "Probe Req Flood\0"
-  "Advertises many fake\0"
-  "networks.\0"
-  "Use it to test how clients\0"
-  "build a list.\0"
+  "Advertises many fake networks\0"
+  "Use to test client list building\0"
   "Beacon Spam List\0"
-  "Replays beacons taken\0"
-  "from a file.\0"
-  "Use it to test beacon\0"
-  "parsing.\0"
+  "Replays beacons taken from a file\0"
+  "Use to test beacon parsing\0"
   "Channel Switch\0"
-  "Forces clients onto\0"
-  "another channel.\0"
-  "Use it to see if a client\0"
-  "follows its AP.\0"
+  "Forces clients to another channel\0"
+  "Use to see if a client follows\0"
   "SAE Commit Flood\0"
-  "Drives WPA3\0"
-  "authentication attempts.\0"
-  "Use it to study SAE\0"
-  "commit exchanges.\0"
+  "Drives WPA3 authentication tries\0"
+  "Use to study SAE exchanges\0"
   "Quiet Time\0"
-  "Sends nothing at all,\0"
-  "only observes.\0"
-  "Use it for passive work\0"
-  "with no side effects.\0"
+  "Sends nothing, only observes\0"
+  "Use for passive checks\0"
   "WiFi > Scanners\0"
-  "WiFi>Scanners>\0"
-  "Scanners need the\0"
-  "device to be on the\0"
-  "network being audited.\0"
   "Ping Scan\0"
-  "Shows which addresses\0"
-  "answer.\0"
-  "Use it to find live hosts\0"
-  "quickly.\0"
+  "Shows which addresses answer\0"
+  "Use to find live hosts\0"
   "ARP Scan\0"
-  "Maps an IP address to\0"
-  "its hardware.\0"
-  "Use it to build a device\0"
-  "inventory.\0"
+  "Maps IP to hardware address\0"
+  "Use to build an inventory\0"
   "Telnet Scan\0"
-  "Finds port 23 open and\0"
-  "reachable.\0"
-  "Use it to find\0"
-  "un-managed equipment.\0"
+  "Finds port 23 open and reachable\0"
+  "Use to find un-managed gear\0"
   "SSH Scan\0"
-  "The same, on port 22.\0"
-  "Use it to spot exposed\0"
-  "servers.\0"
+  "The same, on port 22\0"
+  "Use to spot exposed servers\0"
   "HTTP / HTTPS\0"
-  "Finds web servers and\0"
-  "reads their titles.\0"
-  "Use it to work out what\0"
-  "a device runs.\0"
+  "Web servers and their titles\0"
+  "Use to identify a device\0"
   "RDP Scan\0"
-  "Finds remote desktop\0"
-  "hosts on 3389.\0"
-  "Use it to check for\0"
-  "exposed desktops.\0"
+  "Remote desktop hosts, port 3389\0"
+  "Use to check open desktops\0"
   "Capture a handshake\0"
-  "First run\0"
-  "WiFi>Sniffers>Beacon\0"
-  "Sniff.\0"
-  "Note the BSSID that you\0"
+  "1. Beacon Sniff, note the BSSID you\0"
   "want.\0"
-  "Then run WiFi>Sniffers>\0"
-  "EAPOL/PMKID Scan.\0"
-  "Tap your AP so only it is\0"
-  "targeted.\0"
-  "Deauth goes out, the\0"
-  "client rejoins and the\0"
-  "handshake runs.\0"
-  "Complete EAPOL\0"
-  "counts the ones that\0"
-  "finished all four\0"
-  "The capture file lands\0"
-  "on the SD card.\0"
-  "Every frame carries a\0"
-  "note saying which AP it\0"
-  "belongs to.\0"
-  "A red Dropped means\0"
-  "the buffer was too full\0"
-  "and the capture is short.\0"
+  "2. EAPOL/PMKID Scan, tap your own AP.\0"
+  "3. Deauth goes out, the client\0"
+  "4. The 4-way handshake runs.\0"
+  "5. Complete EAPOL counts the finished\0"
+  "6. The capture file lands on the SD\0"
+  "7. Every frame names the AP it came\0"
+  "8. Red Dropped means the buffer was\0"
   "Terms\0"
-  "EAPOL is the four-way\0"
-  "key handshake, defined\0"
-  "in 802.1X.\0"
-  "SAE is Simultaneous\0"
-  "Authentication of\0"
-  "Equals, the WPA3\0"
-  "PMKID is the Pairwise\0"
-  "Master Key Identifier.\0"
-  "BSSID is the hardware\0"
-  "address of the access\0"
-  "point.\0"
-  "SSID is the name of the\0"
-  "Promiscuous mode\0"
-  "means the radio hears\0"
-  "all traffic, not only its\0"
-  "own.\0"
-  "A deauth is a frame that\0"
-  "forces a client to rejoin.\0"
-  "pcapng is the capture\0"
-  "format that can carry a\0"
-  "note per frame.\0"
-  "pcap is the older\0"
-  "capture format that\0"
-  "aircrack-ng reads.\0"
+  "EAPOL: the 4-way key handshake,\0"
+  "802.1X.\0"
+  "SAE: Simultaneous Auth. of Equals,\0"
+  "WPA3.\0"
+  "PMKID: Pairwise Master Key Identifier.\0"
+  "BSSID: the hardware address of an AP.\0"
+  "SSID: the name of a network.\0"
+  "Promiscuous: hears all traffic, not\0"
+  "just ours.\0"
+  "Deauth: a frame that forces a rejoin.\0"
+  "\0"
+  "pcapng: capture file that keeps notes.\0"
+  "pcap: older format, read by\0"
+  "aircrack-ng.\0"
   "Hizli Basvuru\0"
   "Dil\0"
   "WiFi > Koklayicilar\0"
-  "WiFi>Koklayici>\0"
-  "Koklayicilar sadece\0"
-  "dinler, veri gondermez.\0"
   "Beacon Tarama\0"
-  "Cevredeki erisim\0"
-  "noktalarini listeler, birer\0"
-  "beacon saklar.\0"
-  "Once hedef BSSID'i\0"
-  "bulmak icin kullanilir.\0"
+  "AP'leri listeler, beacon saklar\0"
+  "Once hedef BSSID'i bulmak icin\0"
   "EAPOL/PMKID Tara\0"
-  "Dort yonlu anahtari\0"
-  "kaydeder, deauth da\0"
-  "gonderir.\0"
-  "Bilinen bir AP'nin\0"
-  "anahtarlari icin kullanilir.\0"
+  "4 yonlu anahtari kaydeder\0"
+  "Bilinen bir AP icin kullanilir\0"
   "Probe Istek Tarama\0"
-  "Cihazlar ne ag ariyor,\0"
-  "onu gosterir.\0"
-  "Hangi aglarin arandigini\0"
-  "gormek icin.\0"
+  "Cihazlar ne ag ariyor\0"
+  "Aranan aglari gormek icin\0"
   "Deauth Tarama\0"
-  "Kim atiliyor ve kim\0"
-  "atiyor, onu gosterir.\0"
-  "Bozucu ya da zorba bir\0"
-  "AP fark etmek icin.\0"
+  "Kim atiliyor, kim atiyor\0"
+  "Bozucu bir AP fark etmek icin\0"
   "Paket Izleme\0"
-  "Kanal basina paket\0"
-  "sayar.\0"
-  "En sessiz kanal bulmak\0"
-  "icin kullanilir.\0"
+  "Kanal basina paket sayar\0"
+  "En sessiz kanal bulmak icin\0"
   "Kanal Analizi\0"
-  "Tek kanal icin canli trafik\0"
-  "grafigi.\0"
-  "Bir kanali surekli\0"
-  "izlemek icin.\0"
+  "Tek kanal icin canli grafik\0"
+  "Bir kanali izlemek icin\0"
   "Ham Kayit\0"
-  "Her cerceveyi filtresiz\0"
-  "kaydeder.\0"
-  "Neyin aranacagi belli\0"
-  "degilken.\0"
-  "WPA3 tarafi el\0"
-  "sikismanin karsiligidir.\0"
+  "Her cerceve, filtresiz\0"
+  "Neyin aranacagi belli degilken\0"
+  "WPA3 el sikisma karsiligi\0"
   "Hedef ag WPA3 ise\0"
-  "kullanilir.\0"
   "Pineapple Bul\0"
-  "Gercek bir AP'yi taklit\0"
-  "eden sahte AP bulur.\0"
-  "Kontrol ettiginiz bir\0"
-  "mekani denetlemek icin.\0"
+  "Sahte AP'leri bulur\0"
+  "Kendi mekanini denetlemek icin\0"
   "WiFi > Saldirilar\0"
-  "WiFi>Saldirilar>\0"
-  "Saldirilar veri gonderir.\0"
-  "Yalnizca kendi aginizda.\0"
   "Deauth Seli\0"
-  "Butun istemcileri erisim\0"
-  "noktasindan atar.\0"
-  "Bir istemciyi yeniden\0"
-  "baglamaya zorlamak\0"
-  "icin.\0"
+  "Butun istemcileri atar\0"
+  "Yeniden baglanmayi zorlamak icin\0"
   "Hedefli Deauth\0"
-  "Yalnizca secilen tek\0"
-  "istemciyi atar.\0"
-  "Tek bir cihazi sessizce\0"
-  "dusurmek icin.\0"
+  "Yalnizca tek istemciyi atar\0"
+  "Tek cihazi dusurmek icin\0"
   "Probe Istek Seli\0"
-  "Cok sayida sahte ag ilan\0"
-  "eder.\0"
-  "Istemci liste davranisini\0"
-  "olcmek icin.\0"
+  "Cok sayida sahte ag ilan eder\0"
+  "Istemci liste davranisini olcmek\0"
   "Beacon Spam\0"
-  "Dosyadan alinan\0"
-  "beacon'lari tekrarlar.\0"
-  "Beacon ayristirmasini\0"
-  "test etmek icin.\0"
+  "Dosyadan beacon tekrarlar\0"
+  "Beacon ayristirmasini test etmek\0"
   "Kanal Degistirme\0"
-  "Istemcileri baska bir\0"
-  "kanala zorlar.\0"
-  "Istemcinin AP'sini izleyip\0"
-  "izlemedigini olcmek icin.\0"
+  "Baska kanala zorlar\0"
+  "Istemci AP'yi izliyor mu\0"
   "SAE Commit Seli\0"
-  "WPA3 dogrulama\0"
-  "denemelerini baslatir.\0"
-  "SAE commit akisini\0"
-  "incelemek icin.\0"
+  "WPA3 dogrulamasini baslatir\0"
+  "SAE akisini incelemek icin\0"
   "Sessiz Mod\0"
-  "Hicbir sey gondermez,\0"
-  "yalnizca izler.\0"
-  "Yan etkisi olmayan pasif\0"
-  "calisma icin.\0"
+  "Hicbir sey gondermez\0"
+  "Yan etkisiz pasif calisma icin\0"
   "WiFi > Tarayicilar\0"
-  "WiFi>Tarayici>\0"
-  "Tarayicilarin calismasi\0"
-  "icin cihaz denetlenen\0"
-  "aga bagli olmalidir.\0"
   "Ping Tarama\0"
-  "Hangi adreslerin cevap\0"
-  "verdigini gosterir.\0"
-  "Canli cihazlari hizla\0"
-  "bulmak icin.\0"
+  "Hangi adresler cevap veriyor\0"
+  "Canli cihazlari bulmak icin\0"
   "ARP Tarama\0"
-  "IP adresini donanim\0"
-  "adresine baglar.\0"
-  "Cihaz envanteri\0"
-  "cikarmak icin.\0"
+  "IP'yi donanim adresine baglar\0"
+  "Envanter cikarmak icin\0"
   "Telnet Tarama\0"
-  "23 numarali portun acik\0"
-  "oldugunu bulur.\0"
-  "Yonetim altinda\0"
-  "olmayan cihaz bulmak\0"
+  "23. portun acik oldugunu bulur\0"
+  "Yabanci cihaz bulmak icin\0"
   "SSH Tarama\0"
-  "Ayni is, 22 numarali\0"
-  "portta.\0"
-  "Acik sunuculari fark\0"
-  "etmek icin.\0"
-  "Web sunucularini bulur,\0"
-  "basliklarini okur.\0"
-  "Bir cihazin ne\0"
-  "calistirdigini anlamak\0"
+  "Aynisi, 22. portta\0"
+  "Acik sunuculari fark etmek\0"
+  "Web sunucularini ve basligini\0"
+  "Cihazin ne oldugunu anlamak\0"
   "RDP Tarama\0"
-  "Uzak masaustu\0"
-  "sunucularini 3389\0"
-  "portunda bulur.\0"
-  "Acik masaustlerini\0"
-  "denetlemek icin.\0"
+  "Uzak masaustu, 3389 portu\0"
+  "Acik masaustleri denetlemek\0"
   "El sikisma yakalama\0"
-  "Once\0"
-  "WiFi>Koklayici>Beacon\0"
-  "Tarama calistirin.\0"
-  "Istediginiz BSSID'i not\0"
-  "edin.\0"
-  "Sonra WiFi>Koklayici>\0"
-  "calistirin.\0"
-  "Kendi AP'nize dokunun,\0"
-  "sadece o hedeflensin.\0"
-  "Deauth gider, istemci\0"
-  "geri gelir ve el sikisma\0"
-  "olusur.\0"
-  "Complete EAPOL, dort\0"
-  "mesaji da\0"
-  "tamamlananlari sayar.\0"
-  "Kayit dosyasi SD kartta\0"
-  "belirir.\0"
-  "Her cerceve hangi\0"
-  "AP'ye ait oldugunu\0"
-  "yazar.\0"
-  "Kirmizi Dropped,\0"
-  "tamponun doldugu ve\0"
-  "kaydin eksik oldugu\0"
-  "demektir.\0"
+  "1. Beacon Tarama, istedigin BSSID'i\0"
+  "not al.\0"
+  "2. EAPOL/PMKID Tara, kendi AP'ni sec.\0"
+  "3. Deauth gider, istemci geri gelir.\0"
+  "4. Dort yonlu el sikisma olusur.\0"
+  "5. Complete EAPOL bitenleri sayar.\0"
+  "6. Kayit dosyasi SD kartta belirir.\0"
+  "7. Her cerceve AP'sini yazar.\0"
+  "8. Kirmizi Dropped tampon dolu demek.\0"
   "Terimler\0"
-  "EAPOL, 802.1X'te\0"
-  "tanimlanan dort yonlu\0"
-  "anahtar el sikismasidir.\0"
-  "SAE, WPA3'un Esitlerin\0"
-  "Eszamanli Dogrulama\0"
-  "yontemidir.\0"
-  "PMKID, Eslesme\0"
-  "Anahtari Kimligidir.\0"
-  "BSSID, erisim\0"
-  "noktasinin donanim\0"
-  "adresidir.\0"
-  "SSID, agin adidir.\0"
-  "Promiscuous mod,\0"
-  "radyonun yalnizca kendi\0"
-  "trafigi degil butun trafigi\0"
-  "duymasidir.\0"
-  "Deauth, istemciyi\0"
-  "yeniden baglamaya\0"
-  "zorlayan bir cercevedir.\0"
-  "pcapng, her cerceveye\0"
-  "not eklenebilen kayit\0"
-  "bicimidir.\0"
-  "pcap, aircrack-ng'in\0"
-  "okudugu daha eski kayit\0"
+  "EAPOL: 802.1X'in dort yonlu el\0"
+  "sikismasi.\0"
+  "SAE: Esitlerin Eszamanli Dogrulamasi,\0"
+  "PMKID: Eslesme Anahtari Kimligi.\0"
+  "BSSID: bir AP'nin donanim adresi.\0"
+  "SSID: bir agin adi.\0"
+  "Promiscuous: yalnizca kendi degil, tum\0"
+  "trafik.\0"
+  "Deauth: yeniden baglamaya zorlayan\0"
+  "cerceve.\0"
+  "pcapng: not tutan kayit dosyasi.\0"
+  "pcap: aircrack-ng'in okudugu eski\0"
+  "bicim.\0"
   ;
 
-inline const uint16_t kOffsets[LANG_COUNT][183] PROGMEM = {
+inline const uint16_t kOffsets[LANG_COUNT][96] PROGMEM = {
   [LANG_EN] = {
-    0, 16, 25, 41, 56, 78, 95, 108, 128, 149, 162, 188, 204, 221, 245, 267, 268, 293, 303, 323, 346, 359, 379, 400, 413, 432, 452, 476, 491, 506, 525, 534, 553, 571, 588, 525, 615, 633, 652, 664, 687, 698, 722, 745, 756, 779, 792, 815, 832, 849, 870, 888, 912, 925, 940, 954, 976, 990, 1003, 1030, 1044, 1072, 267, 1083, 1099, 1123, 1129, 1153, 1169, 1185, 1206, 1216, 1243, 1257, 1274, 1296, 1309, 1331, 1340, 1355, 1375, 1392, 1418, 1434, 1451, 1463, 1488, 1508, 1526, 1537, 1559, 1574, 1598, 1620, 1636, 1651, 1669, 1689, 1712, 1722, 1744, 1752, 1778, 1787, 1796, 1818, 1832, 1857, 1868, 1880, 1903, 1914, 1929, 267, 1951, 1960, 267, 1982, 2005, 2014, 2027, 2049, 2069, 2093, 267, 2108, 2117, 2138, 267, 2153, 2173, 2191, 2211, 2221, 2242, 2249, 2273, 2279, 2303, 267, 2321, 2347, 2357, 2378, 2401, 2417, 2432, 2453, 2471, 2494, 2510, 2532, 2556, 2568, 2588, 2612, 267, 2638, 2644, 2666, 2689, 2700, 2720, 2738, 2755, 2777, 2800, 2822, 2844, 2851, 2875, 2892, 2914, 2940, 2945, 2970, 267, 2997, 3019, 3043, 3059, 3077, 3097
+    0, 16, 25, 41, 54, 89, 116, 133, 168, 187, 207, 236, 263, 276, 303, 324, 339, 366, 394, 411, 443, 466, 478, 508, 537, 548, 578, 606, 623, 658, 686, 701, 714, 744, 772, 788, 817, 845, 861, 891, 924, 941, 975, 1002, 1017, 1051, 1082, 1099, 1132, 1159, 1170, 1199, 1222, 1238, 1248, 1277, 1300, 1309, 1337, 1363, 1375, 1408, 1436, 1445, 1466, 1494, 1507, 1536, 1561, 1570, 1602, 1629, 1649, 1685, 1691, 1729, 1760, 1789, 1827, 1863, 1899, 1935, 1941, 1973, 1981, 2016, 2022, 2061, 2099, 2128, 2164, 2175, 2213, 2214, 2253, 2281
   },
   [LANG_TR] = {
-    3116, 3130, 3134, 3154, 3170, 3190, 3214, 3228, 3245, 3273, 3288, 3307, 3331, 3348, 3368, 3388, 3398, 3417, 3446, 3465, 3488, 3502, 3527, 3540, 3554, 3574, 3596, 3619, 3639, 3652, 3671, 3678, 3701, 3718, 3732, 3760, 3769, 3788, 3802, 3812, 3836, 3846, 3868, 745, 3878, 3893, 3918, 3936, 3948, 3962, 3986, 4007, 4029, 4053, 4071, 4088, 4114, 4139, 4151, 4176, 4194, 4216, 4235, 4241, 4256, 4277, 4293, 4317, 4332, 4349, 4374, 4380, 4406, 4419, 4431, 4447, 4470, 4492, 4509, 4526, 4548, 4563, 4590, 4616, 4632, 4647, 4670, 4689, 4705, 4716, 4738, 4754, 4779, 4793, 4812, 4827, 4851, 4873, 4894, 4906, 4929, 4949, 4971, 4984, 4995, 5015, 5032, 5048, 5063, 5077, 5101, 5117, 5133, 4235, 5154, 5165, 5186, 5194, 5215, 2014, 5227, 5251, 5270, 5285, 4235, 5308, 5319, 5333, 5351, 5367, 5386, 5403, 5423, 5428, 5450, 5469, 5493, 5499, 3331, 5521, 5533, 5556, 5578, 5600, 5625, 5633, 5654, 5664, 5686, 5710, 5719, 5737, 5756, 5763, 5780, 5800, 5820, 5830, 5839, 5856, 5878, 5903, 5926, 5946, 5958, 5973, 5994, 6008, 6027, 6038, 6057, 6074, 6098, 6126, 6138, 6156, 6174, 6199, 6221, 6243, 6254, 6275, 6243
+    2294, 2308, 2312, 2332, 2346, 2378, 2409, 2426, 2452, 2483, 2502, 2524, 2550, 2564, 2589, 2619, 2632, 2657, 2685, 2699, 2727, 2751, 2761, 2784, 537, 2815, 2841, 2859, 2873, 2893, 2924, 2942, 2954, 2977, 3010, 3025, 3053, 3078, 3095, 3125, 3158, 3170, 3196, 3229, 3246, 3266, 3291, 3307, 3335, 3362, 3373, 3394, 3425, 3444, 3456, 3485, 3513, 3524, 3554, 3577, 3591, 3622, 3648, 3659, 3678, 1494, 3705, 3735, 3763, 3774, 3800, 3828, 3848, 3884, 3892, 3930, 3967, 4000, 4035, 4071, 4101, 4139, 4148, 4179, 4190, 2016, 4228, 4261, 4295, 4315, 4354, 4362, 4397, 4406, 4439, 4473
   },
 };
 

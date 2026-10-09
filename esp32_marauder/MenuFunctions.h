@@ -393,24 +393,24 @@ Menu bootLogMenu;
     void main(uint32_t currentTime);
     void buildBootLogMenu();
   void buildHelpMenu();
-  void buildHelpScanMenu();
-  void buildHelpAttackMenu();
-  void buildHelpScannerMenu();
-  void buildHelpCaptureMenu();
-  void buildHelpTermsMenu();
   void buildHelpLangMenu();
   // Reference helpers. addNodes() is private, so these have to be members.
+  // Reference. The index is a normal menu; each section is a text screen
+  // drawn straight to the panel, one screen, no scrolling.
+  void drawHelpSection(const HelpId* ids, uint8_t count);
+  void showHelpSniffers();
+  void showHelpAttacks();
+  void showHelpScanners();
+  void showHelpCapture();
+  void showHelpTerms();
+
+  // True while a section text screen is up, so a tap returns to the index
+  // instead of being read as a menu selection.
+  bool help_text_active = false;
   void addBackNode(Menu* menu, Menu* parent);
-  void addRow(Menu* menu, HelpId id, uint8_t color, int icon);
-  void addRowLines(Menu* menu, HelpId base, uint8_t color, int icon);
-  void addMode(Menu* menu, HelpId name, HelpId what, HelpId when,
-              HelpId path, bool show_path, int category);
   // Escape hatch for the reference: a close box in the top-left of the status
   // bar, so a long page can be left without scrolling to the back entry at
   // the bottom. Only drawn and only tappable while inside the reference.
-  bool inHelpSection() const;
-  void drawHelpClose();
-  bool helpCloseHit(int16_t tx, int16_t ty) const;
 void RunSetup();
     void orientDisplay();
 };
