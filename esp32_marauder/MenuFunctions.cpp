@@ -2125,12 +2125,21 @@ void MenuFunctions::buildBootLogMenu() {
     display_obj.tft.setTextSize(1);
     display_obj.tft.setTextColor(TFT_WHITE);
 
-    // Start below the status bar and leave a line of breathing room at the
-    // bottom so the last entry is not flush against the bezel.
-    int16_t y = STATUS_BAR_WIDTH + 6;
-    const int16_t limit = SCREEN_HEIGHT - 10;
+    // Every 8 pixels from just under the status bar to the bezel: 37 rows on
+    // the 240x320 panel. The first cut of this started six pixels lower and
+    // stopped ten short of the bottom, which silently dropped the last entry
+    // of the sniffers section. check_help_fits.py mirrors these numbers.
+    int16_t y = STATUS_BAR_WIDTH + 2;
+    const int16_t limit = SCREEN_HEIGHT - 2 - 8;
 
-    for (uint8_t i = 0; i < count; i++) {
+    // A separator after the final entry separates nothing, and spending a row
+    // on it is what pushed the sniffers page over the edge.
+    uint8_t last = count;
+    while (last > 0 && ids[last - 1] == HELP_ID_MAX) {
+      last--;
+    }
+
+    for (uint8_t i = 0; i < last; i++) {
       if (ids[i] == HELP_ID_MAX) {
         y += 8;
         continue;
