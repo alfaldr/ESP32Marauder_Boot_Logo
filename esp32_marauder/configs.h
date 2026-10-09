@@ -1571,9 +1571,15 @@
       #define YMAX 320 // Bottom of screen area
       #define minimum(a,b)     (((a) < (b)) ? (a) : (b))
       //#define MENU_FONT NULL
-      #define MENU_FONT &FreeMono9pt7b // Winner
+      // FreeMono9pt7b advanced 11px per lowercase glyph, leaving 17
+      // usable characters in the 196px menu button and pushing every
+      // longer label into the scrolling marquee. FreeSans9pt7b
+      // advances 10px at the same 9pt height, so 21 characters fit,
+      // and a proportional sans reads cleaner than bold monospace
+      // at this size.
+      #define MENU_FONT &FreeSans9pt7b
+      //#define MENU_FONT &FreeMono9pt7b
       //#define MENU_FONT &FreeMonoBold9pt7b
-      //#define MENU_FONT &FreeSans9pt7b
       //#define MENU_FONT &FreeSansBold9pt7b
       #define BUTTON_SCREEN_LIMIT 12
       #define BUTTON_ARRAY_LEN BUTTON_SCREEN_LIMIT

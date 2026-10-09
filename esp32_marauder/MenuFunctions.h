@@ -203,6 +203,7 @@ Menu bootLogMenu;
     Menu helpScannerMenu;
     Menu helpCaptureMenu;
     Menu helpTermsMenu;
+    Menu helpLangMenu;
 
     // Device menu stuff
     //Menu whichUpdateMenu;
@@ -395,8 +396,8 @@ Menu bootLogMenu;
   void buildHelpScannerMenu();
   void buildHelpCaptureMenu();
   void buildHelpTermsMenu();
+  void buildHelpLangMenu();
   // Reference helpers. addNodes() is private, so these have to be members.
-  void addInfoNode(Menu* menu, const char* text, uint8_t color);
   void addBackNode(Menu* menu, Menu* parent);
 void RunSetup();
     void orientDisplay();

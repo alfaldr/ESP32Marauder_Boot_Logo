@@ -3,6 +3,7 @@
 #include "CommandLine.h"
 #include "OwnedListLifecycle.h"
 #include "BootLog.h"
+#include "lang/HelpLang.h"
 #include "lang_var.h"
 
 #ifdef HAS_SCREEN
@@ -2080,37 +2081,67 @@ void MenuFunctions::buildBootLogMenu() {
 // a short line keeps a whole topic on one screen where possible.
 // ---------------------------------------------------------------------------
 
-void MenuFunctions::addInfoNode(Menu *menu, const char *text, uint8_t color) {
-  this->addNodes(menu, text, color, 0, [this]() {});
+// Reference pages.
+//
+// Structure lives here, text lives in lang/. Every label comes from the
+// catalogue, which is pre-wrapped to HELP_LINE_MAX, so nothing scrolls
+// sideways no matter which language is selected. Rows are data, not literals,
+// so a translator never has to match the code.
+
+namespace {
+
+// Label from the catalogue.
+inline void addRow(MenuFunctions *m, Menu *menu, HelpId id, uint8_t color) {
+  m->addNodes(menu, helpText(id), color, 0, []() {});
 }
 
-void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
-  menu->parentMenu = parent;
-  this->addNodes(menu, text09, TFTLIGHTGREY, 0, [this, menu]() {
-    this->changeMenu(menu->parentMenu, true);
-  });
+// A label plus every continuation line the catalogue wrapped it into.
+inline void addRowLines(MenuFunctions *m, Menu *menu, HelpId base, uint8_t color) {
+  const char *lines[6];
+  const uint8_t n = helpLines(base, lines, 6);
+  for (uint8_t i = 0; i < n; i++) {
+    m->addNodes(menu, lines[i], color, 0, []() {});
+  }
 }
+
+// A mode: its name on a bright line, then what it does, then when to use it.
+inline void addMode(MenuFunctions *m, Menu *menu, HelpId name, HelpId what,
+                    HelpId when, HelpId path, bool show_path) {
+  if (show_path) addRow(m, menu, path, TFTLIGHTGREY);
+  addRow(m, menu, name, TFTWHITE);
+  addRowLines(m, menu, what, TFTLIGHTGREY);
+  if (when != (HelpId)0) addRowLines(m, menu, when, TFTORANGE);
+}
+
+}  // namespace
 
 void MenuFunctions::buildHelpMenu() {
   helpMenu.list->clear();
 
-  this->addNodes(&helpMenu, "WiFi > Sniffers", TFTWHITE, SNIFFERS, [this]() {
+  // Language first: it changes every page below, so it belongs where it is
+  // noticed rather than buried in a submenu.
+  this->addNodes(&helpMenu, helpText(H_INDEX_LANG), TFTPURPLE, LANGUAGE, [this]() {
+    this->buildHelpLangMenu();
+    this->changeMenu(&helpLangMenu, true);
+  });
+
+  this->addNodes(&helpMenu, helpText(H_SNIFFERS_TITLE), TFTWHITE, SNIFFERS, [this]() {
     this->buildHelpScanMenu();
     this->changeMenu(&helpScanMenu, true);
   });
-  this->addNodes(&helpMenu, "WiFi > Attacks", TFTWHITE, ATTACKS, [this]() {
+  this->addNodes(&helpMenu, helpText(H_ATTACKS_TITLE), TFTWHITE, ATTACKS, [this]() {
     this->buildHelpAttackMenu();
     this->changeMenu(&helpAttackMenu, true);
   });
-  this->addNodes(&helpMenu, "WiFi > Scanners", TFTWHITE, SCANNERS, [this]() {
+  this->addNodes(&helpMenu, helpText(H_SCANNERS_TITLE), TFTWHITE, SCANNERS, [this]() {
     this->buildHelpScannerMenu();
     this->changeMenu(&helpScannerMenu, true);
   });
-  this->addNodes(&helpMenu, "Capture a Handshake", TFTORANGE, EAPOL, [this]() {
+  this->addNodes(&helpMenu, helpText(H_CAPTURE_TITLE), TFTORANGE, EAPOL, [this]() {
     this->buildHelpCaptureMenu();
     this->changeMenu(&helpCaptureMenu, true);
   });
-  this->addNodes(&helpMenu, "Terms", TFTWHITE, GENERAL_APPS, [this]() {
+  this->addNodes(&helpMenu, helpText(H_TERMS_TITLE), TFTWHITE, GENERAL_APPS, [this]() {
     this->buildHelpTermsMenu();
     this->changeMenu(&helpTermsMenu, true);
   });
@@ -2118,139 +2149,108 @@ void MenuFunctions::buildHelpMenu() {
   addBackNode(&helpMenu, &deviceMenu);
 }
 
-// Each mode gets two lines: where to find it and what it does, then a dimmed
-// line with a typical reason to reach for it. Both stay under ~44 characters,
-// which is what fits between the button borders at FreeMono9pt7b, so nothing
-// has to scroll sideways to read.
+void MenuFunctions::buildHelpLangMenu() {
+  helpLangMenu.list->clear();
+  for (uint8_t i = 0; i < LANG_COUNT; i++) {
+    const HelpLang lang = (HelpLang)i;
+    const bool active = (helpGetLang() == lang);
+    this->addNodes(&helpLangMenu, helpLangLabel(lang),
+                   active ? TFTGREEN : TFTLIGHTGREY, 0, [this, lang]() {
+      helpSetLang(lang);
+      // Rebuild every page so the switch is visible immediately on the way
+      // back up, not the next time it is opened.
+      this->buildHelpMenu();
+      this->buildHelpScanMenu();
+      this->buildHelpAttackMenu();
+      this->buildHelpScannerMenu();
+      this->buildHelpCaptureMenu();
+      this->buildHelpTermsMenu();
+      this->changeMenu(&helpMenu, true);
+    });
+  }
+  addBackNode(&helpLangMenu, &helpMenu);
+}
+
 void MenuFunctions::buildHelpScanMenu() {
   helpScanMenu.list->clear();
 
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Beacon Sniff", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  lists APs, saves one beacon each", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: first, to find a target BSSID", TFTLIGHTGREY);
+  addMode(this, &helpScanMenu, H_SNIFFERS_BEACON_NAME, H_SNIFFERS_BEACON_WHAT,
+          H_SNIFFERS_BEACON_WHEN, H_SNIFFERS_PATH, true);
+  addMode(this, &helpScanMenu, H_SNIFFERS_EAPOL_NAME, H_SNIFFERS_EAPOL_WHAT,
+          H_SNIFFERS_EAPOL_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_PROBE_NAME, H_SNIFFERS_PROBE_WHAT,
+          H_SNIFFERS_PROBE_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_DEAUTH_NAME, H_SNIFFERS_DEAUTH_WHAT,
+          H_SNIFFERS_DEAUTH_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_PKT_NAME, H_SNIFFERS_PKT_WHAT,
+          H_SNIFFERS_PKT_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_CHAN_NAME, H_SNIFFERS_CHAN_WHAT,
+          H_SNIFFERS_CHAN_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_RAW_NAME, H_SNIFFERS_RAW_WHAT,
+          H_SNIFFERS_RAW_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_SAE_NAME, H_SNIFFERS_SAE_WHAT,
+          H_SNIFFERS_SAE_WHEN, H_SNIFFERS_PATH, false);
+  addMode(this, &helpScanMenu, H_SNIFFERS_PINE_NAME, H_SNIFFERS_PINE_WHAT,
+          H_SNIFFERS_PINE_WHEN, H_SNIFFERS_PATH, false);
 
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>EAPOL/PMKID Scan", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  saves 4-way keys; send deauth too", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: grab keys of a known AP", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Probe Request Sniff", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  what devices are looking for", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: see which networks are sought", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Deauth Sniff", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  who is being kicked off, and by whom", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: spot a jammer or a bully AP", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Packet Monitor", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  counts and speeds per channel", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: find the quietest channel", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Channel Analyzer", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  live traffic graph per channel", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: watch one channel over time", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Raw Capture", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  saves every frame, no filtering", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: when you do not know what to look for", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>SAE Commit", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  WPA3 handshake equivalent", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: the target network is WPA3", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Detect Pineapple", TFTWHITE);
-  addInfoNode(&helpScanMenu, "  finds Pineapple-style rogue APs", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "  use: audit your own venue for rogue APs", TFTLIGHTGREY);
-
-  addInfoNode(&helpScanMenu, "All sniffers only listen.", TFTGREEN);
-
+  addRowLines(this, &helpScanMenu, H_SNIFFERS_NOTE, TFTGREEN);
   addBackNode(&helpScanMenu, &helpMenu);
 }
 
 void MenuFunctions::buildHelpAttackMenu() {
   helpAttackMenu.list->clear();
 
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Deauth Flood", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  kicks every client off the AP", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: force a reconnect, or test", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "     that clients recover", TFTLIGHTGREY);
+  addMode(this, &helpAttackMenu, H_ATTACKS_DEAUTH_NAME, H_ATTACKS_DEAUTH_WHAT,
+          H_ATTACKS_DEAUTH_WHEN, H_ATTACKS_PATH, true);
+  addMode(this, &helpAttackMenu, H_ATTACKS_TARGETED_NAME, H_ATTACKS_TARGETED_WHAT,
+          H_ATTACKS_TARGETED_WHEN, H_ATTACKS_PATH, false);
+  addMode(this, &helpAttackMenu, H_ATTACKS_PROBE_NAME, H_ATTACKS_PROBE_WHAT,
+          H_ATTACKS_PROBE_WHEN, H_ATTACKS_PATH, false);
+  addMode(this, &helpAttackMenu, H_ATTACKS_BEACON_NAME, H_ATTACKS_BEACON_WHAT,
+          H_ATTACKS_BEACON_WHEN, H_ATTACKS_PATH, false);
+  addMode(this, &helpAttackMenu, H_ATTACKS_CSA_NAME, H_ATTACKS_CSA_WHAT,
+          H_ATTACKS_CSA_WHEN, H_ATTACKS_PATH, false);
+  addMode(this, &helpAttackMenu, H_ATTACKS_SAE_NAME, H_ATTACKS_SAE_WHAT,
+          H_ATTACKS_SAE_WHEN, H_ATTACKS_PATH, false);
+  addMode(this, &helpAttackMenu, H_ATTACKS_QUIET_NAME, H_ATTACKS_QUIET_WHAT,
+          H_ATTACKS_QUIET_WHEN, H_ATTACKS_PATH, false);
 
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Deauth Targeted", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  one client only, not the whole AP", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: bring down one device, quietly", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Probe Req Flood", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  many fake networks advertised", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: test client list behaviour", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Beacon Spam List", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  replays beacons from a list file", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: test beacon parsing", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Channel Switch", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  forces clients onto another channel", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: prove a client follows the AP", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>SAE Commit Flood", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  drives WPA3 authentication attempts", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: study SAE commit exchanges", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Quiet Time", TFTWHITE);
-  addInfoNode(&helpAttackMenu, "  sends nothing, just observes", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  use: passive work, no side effects", TFTLIGHTGREY);
-
-  addInfoNode(&helpAttackMenu, "Attacks transmit. Own network only.", TFTRED);
-
+  addRowLines(this, &helpAttackMenu, H_ATTACKS_NOTE, TFTRED);
   addBackNode(&helpAttackMenu, &helpMenu);
 }
 
 void MenuFunctions::buildHelpScannerMenu() {
   helpScannerMenu.list->clear();
 
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>Ping Scan", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  which addresses answer", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: find live hosts fast", TFTLIGHTGREY);
+  addMode(this, &helpScannerMenu, H_SCANNERS_PING_NAME, H_SCANNERS_PING_WHAT,
+          H_SCANNERS_PING_WHEN, H_SCANNERS_PATH, true);
+  addMode(this, &helpScannerMenu, H_SCANNERS_ARP_NAME, H_SCANNERS_ARP_WHAT,
+          H_SCANNERS_ARP_WHEN, H_SCANNERS_PATH, false);
+  addMode(this, &helpScannerMenu, H_SCANNERS_TELNET_NAME, H_SCANNERS_TELNET_WHAT,
+          H_SCANNERS_TELNET_WHEN, H_SCANNERS_PATH, false);
+  addMode(this, &helpScannerMenu, H_SCANNERS_SSH_NAME, H_SCANNERS_SSH_WHAT,
+          H_SCANNERS_SSH_WHEN, H_SCANNERS_PATH, false);
+  addMode(this, &helpScannerMenu, H_SCANNERS_HTTP_NAME, H_SCANNERS_HTTP_WHAT,
+          H_SCANNERS_HTTP_WHEN, H_SCANNERS_PATH, false);
+  addMode(this, &helpScannerMenu, H_SCANNERS_RDP_NAME, H_SCANNERS_RDP_WHAT,
+          H_SCANNERS_RDP_WHEN, H_SCANNERS_PATH, false);
 
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>ARP Scan", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  maps IP to hardware address", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: build a device inventory", TFTLIGHTGREY);
-
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>Telnet Scan", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  port 23 open and reachable", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: find un-managed gear", TFTLIGHTGREY);
-
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>SSH Scan", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  same, on port 22", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: spot servers exposed", TFTLIGHTGREY);
-
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>HTTP / HTTPS", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  finds web servers and titles", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: identify what a device runs", TFTLIGHTGREY);
-
-  addInfoNode(&helpScannerMenu, "WiFi>Scanners>RDP Scan", TFTWHITE);
-  addInfoNode(&helpScannerMenu, "  port 3389, remote desktop hosts", TFTLIGHTGREY);
-  addInfoNode(&helpScannerMenu, "  use: check for exposed desktops", TFTLIGHTGREY);
-
-  addInfoNode(&helpScannerMenu, "Scanners need the device joined to", TFTGREEN);
-  addInfoNode(&helpScannerMenu, "the network you are auditing.", TFTGREEN);
-
+  addRowLines(this, &helpScannerMenu, H_SCANNERS_NOTE, TFTGREEN);
   addBackNode(&helpScannerMenu, &helpMenu);
 }
 
 void MenuFunctions::buildHelpCaptureMenu() {
   helpCaptureMenu.list->clear();
 
-  addInfoNode(&helpCaptureMenu, "1. WiFi>Sniffers>Beacon Sniff", TFTWHITE);
-  addInfoNode(&helpCaptureMenu, "2. Note the BSSID you want", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "3. WiFi>Sniffers>EAPOL/PMKID Scan", TFTWHITE);
-  addInfoNode(&helpCaptureMenu, "4. Tap your AP to target just it", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "5. Deauth goes out, the client", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "   rejoins and runs the handshake", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "6. Complete EAPOL counts the ones", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "   that finished all four messages", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "7. The file lands on the SD card", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "8. Every frame names its AP", TFTGREEN);
-  addInfoNode(&helpCaptureMenu, "9. Red 'Dropped' means the buffer", TFTORANGE);
-  addInfoNode(&helpCaptureMenu, "   was too full: capture is short", TFTORANGE);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP1, TFTWHITE);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP2, TFTLIGHTGREY);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP3, TFTWHITE);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP4, TFTLIGHTGREY);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP5, TFTWHITE);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP6, TFTLIGHTGREY);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP7, TFTWHITE);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP8, TFTLIGHTGREY);
+  addRowLines(this, &helpCaptureMenu, H_CAPTURE_STEP9, TFTORANGE);
 
   addBackNode(&helpCaptureMenu, &helpMenu);
 }
@@ -2258,21 +2258,18 @@ void MenuFunctions::buildHelpCaptureMenu() {
 void MenuFunctions::buildHelpTermsMenu() {
   helpTermsMenu.list->clear();
 
-  addInfoNode(&helpTermsMenu, "EAPOL - 4-way key handshake, 802.1X", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "SAE - Simultaneous Auth. of Equals", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "PMKID - Pairwise Master Key ID", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "BSSID - the AP's hardware address", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "SSID - the network's name", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "promiscuous - hear all traffic,", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "   not just our own", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "deauth - a frame that forces a", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "   client to rejoin", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "pcapng - capture file, keeps notes", TFTWHITE);
-  addInfoNode(&helpTermsMenu, "pcap - old format, for aircrack-ng", TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_EAPOL, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_SAE, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PMKID, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_BSSID, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_SSID, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PROMISCUOUS, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_DEAUTH, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PCAPNG, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PCAP, TFTWHITE);
 
   addBackNode(&helpTermsMenu, &helpMenu);
 }
-
 void MenuFunctions::RunSetup()
 {
   extern LinkedList<AccessPoint>* access_points;
@@ -2306,6 +2303,7 @@ void MenuFunctions::RunSetup()
   helpScannerMenu.list = new LinkedList<MenuNode>();
   helpCaptureMenu.list = new LinkedList<MenuNode>();
   helpTermsMenu.list = new LinkedList<MenuNode>();
+  helpLangMenu.list = new LinkedList<MenuNode>();
   #ifdef HAS_GPS
     if (gps_obj.getGpsModuleStatus()) {
       gpsMenu.list = new LinkedList<MenuNode>();
@@ -4102,7 +4100,7 @@ void MenuFunctions::RunSetup()
     this->buildBootLogMenu();
     this->changeMenu(&bootLogMenu, true);
   });
-  this->addNodes(&deviceMenu, "Quick Reference", TFTGREEN, GENERAL_APPS, [this]() {
+  this->addNodes(&deviceMenu, helpText(H_INDEX_TITLE), TFTGREEN, GENERAL_APPS, [this]() {
     this->buildHelpMenu();
     this->changeMenu(&helpMenu, true);
   });

@@ -1,0 +1,176 @@
+# Quick Reference catalogue - English
+#
+# Write whole sentences. gen_help.py wraps them to 17 characters and gives
+# every line its own id, so nothing scrolls on screen.
+# Keep this ASCII-only: the menu font has no glyphs beyond 127.
+
+[index]
+title  = Quick Reference
+lang   = Language
+
+[sniffers]
+title = WiFi > Sniffers
+path  = WiFi>Sniffers>
+note  = Sniffers only listen, nothing is sent.
+
+[sniffers.beacon]
+name = Beacon Sniff
+what = Lists nearby access points and keeps one beacon each.
+when = Use it first, to find the BSSID you want.
+
+[sniffers.eapol]
+name = EAPOL/PMKID Scan
+what = Saves the four-way keys and sends deauth too.
+when = Use it for the keys of a known AP.
+
+[sniffers.probe]
+name = Probe Request Sniff
+what = Shows what devices are looking for.
+when = Use it to see which networks are sought.
+
+[sniffers.deauth]
+name = Deauth Sniff
+what = Shows who is being kicked and by whom.
+when = Use it to spot a jammer or a bully AP.
+
+[sniffers.pkt]
+name = Packet Monitor
+what = Counts packets per channel.
+when = Use it to find the quietest channel.
+
+[sniffers.chan]
+name = Channel Analyzer
+what = Live traffic graph for one channel.
+when = Use it to watch a channel over time.
+
+[sniffers.raw]
+name = Raw Capture
+what = Saves every frame with no filter.
+when = Use it when you are not sure what to look for.
+
+[sniffers.sae]
+name = SAE Commit
+what = The WPA3 equivalent of a handshake.
+when = Use it when the target network is WPA3.
+
+[sniffers.pine]
+name = Detect Pineapple
+what = Finds rogue APs that clone a real one.
+when = Use it to audit a venue you control.
+
+[attacks]
+title = WiFi > Attacks
+path  = WiFi>Attacks>
+note  = Attacks transmit. Own network only.
+
+[attacks.deauth]
+name = Deauth Flood
+what = Kicks every client off the access point.
+when = Use it to force a client to reconnect.
+
+[attacks.targeted]
+name = Deauth Targeted
+what = Kicks one chosen client only.
+when = Use it to drop a single device quietly.
+
+[attacks.probe]
+name = Probe Req Flood
+what = Advertises many fake networks.
+when = Use it to test how clients build a list.
+
+[attacks.beacon]
+name = Beacon Spam List
+what = Replays beacons taken from a file.
+when = Use it to test beacon parsing.
+
+[attacks.csa]
+name = Channel Switch
+what = Forces clients onto another channel.
+when = Use it to see if a client follows its AP.
+
+[attacks.sae]
+name = SAE Commit Flood
+what = Drives WPA3 authentication attempts.
+when = Use it to study SAE commit exchanges.
+
+[attacks.quiet]
+name = Quiet Time
+what = Sends nothing at all, only observes.
+when = Use it for passive work with no side effects.
+
+[scanners]
+title = WiFi > Scanners
+path  = WiFi>Scanners>
+note  = Scanners need the device to be on the network being audited.
+
+[scanners.ping]
+name = Ping Scan
+what = Shows which addresses answer.
+when = Use it to find live hosts quickly.
+
+[scanners.arp]
+name = ARP Scan
+what = Maps an IP address to its hardware.
+when = Use it to build a device inventory.
+
+[scanners.telnet]
+name = Telnet Scan
+what = Finds port 23 open and reachable.
+when = Use it to find un-managed equipment.
+
+[scanners.ssh]
+name = SSH Scan
+what = The same, on port 22.
+when = Use it to spot exposed servers.
+
+[scanners.http]
+name = HTTP / HTTPS
+what = Finds web servers and reads their titles.
+when = Use it to work out what a device runs.
+
+[scanners.rdp]
+name = RDP Scan
+what = Finds remote desktop hosts on 3389.
+when = Use it to check for exposed desktops.
+
+[capture]
+title = Capture a handshake
+step1 = First run WiFi>Sniffers>Beacon Sniff.
+step2 = Note the BSSID that you want.
+step3 = Then run WiFi>Sniffers>EAPOL/PMKID Scan.
+step4 = Tap your AP so only it is targeted.
+step5 = Deauth goes out, the client rejoins and the handshake runs.
+step6 = Complete EAPOL counts the ones that finished all four messages.
+step7 = The capture file lands on the SD card.
+step8 = Every frame carries a note saying which AP it belongs to.
+step9 = A red Dropped means the buffer was too full and the capture is short.
+
+[terms]
+title = Terms
+
+[terms.eapol]
+a = EAPOL is the four-way key handshake, defined in 802.1X.
+
+[terms.sae]
+a = SAE is Simultaneous Authentication of Equals, the WPA3 method.
+
+[terms.pmkid]
+a = PMKID is the Pairwise Master Key Identifier.
+
+[terms.bssid]
+a = BSSID is the hardware address of the access point.
+
+[terms.ssid]
+a = SSID is the name of the network.
+
+[terms.promiscuous]
+a = Promiscuous mode means the radio hears all traffic, not only its own.
+
+[terms.deauth]
+a = A deauth is a frame that forces a client to rejoin.
+
+[terms.pcapng]
+a = pcapng is the capture format that can carry a note per frame.
+
+[terms.pcap]
+a = pcap is the older capture format that aircrack-ng reads.

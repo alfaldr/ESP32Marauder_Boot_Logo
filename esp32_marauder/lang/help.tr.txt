@@ -1,0 +1,177 @@
+# Hizli basvuru katalogu - Turkce
+#
+# Turkce karakterler YAZILMAZ. Menu fontu (FreeMono9pt7b) yalnizca ASCII
+# karakterlere sahip; 'ı', 'ş', 'ç', 'ğ', 'ö', 'ü' ekranda kutu olarak
+# cikardi. Dogru yazim yerine duz karsilik kullan: i, s, c, g, o, u.
+# Cumlelerin tamamini yaz; gen_help.py 17 karaktere sarar.
+
+[index]
+title  = Hizli Basvuru
+lang   = Dil
+
+[sniffers]
+title = WiFi > Koklayicilar
+path  = WiFi>Koklayici>
+note  = Koklayicilar sadece dinler, veri gondermez.
+
+[sniffers.beacon]
+name = Beacon Tarama
+what = Cevredeki erisim noktalarini listeler, birer beacon saklar.
+when = Once hedef BSSID'i bulmak icin kullanilir.
+
+[sniffers.eapol]
+name = EAPOL/PMKID Tara
+what = Dort yonlu anahtari kaydeder, deauth da gonderir.
+when = Bilinen bir AP'nin anahtarlari icin kullanilir.
+
+[sniffers.probe]
+name = Probe Istek Tarama
+what = Cihazlar ne ag ariyor, onu gosterir.
+when = Hangi aglarin arandigini gormek icin.
+
+[sniffers.deauth]
+name = Deauth Tarama
+what = Kim atiliyor ve kim atiyor, onu gosterir.
+when = Bozucu ya da zorba bir AP fark etmek icin.
+
+[sniffers.pkt]
+name = Paket Izleme
+what = Kanal basina paket sayar.
+when = En sessiz kanal bulmak icin kullanilir.
+
+[sniffers.chan]
+name = Kanal Analizi
+what = Tek kanal icin canli trafik grafigi.
+when = Bir kanali surekli izlemek icin.
+
+[sniffers.raw]
+name = Ham Kayit
+what = Her cerceveyi filtresiz kaydeder.
+when = Neyin aranacagi belli degilken.
+
+[sniffers.sae]
+name = SAE Commit
+what = WPA3 tarafi el sikismanin karsiligidir.
+when = Hedef ag WPA3 ise kullanilir.
+
+[sniffers.pine]
+name = Pineapple Bul
+what = Gercek bir AP'yi taklit eden sahte AP bulur.
+when = Kontrol ettiginiz bir mekani denetlemek icin.
+
+[attacks]
+title = WiFi > Saldirilar
+path  = WiFi>Saldirilar>
+note  = Saldirilar veri gonderir. Yalnizca kendi aginizda.
+
+[attacks.deauth]
+name = Deauth Seli
+what = Butun istemcileri erisim noktasindan atar.
+when = Bir istemciyi yeniden baglamaya zorlamak icin.
+
+[attacks.targeted]
+name = Hedefli Deauth
+what = Yalnizca secilen tek istemciyi atar.
+when = Tek bir cihazi sessizce dusurmek icin.
+
+[attacks.probe]
+name = Probe Istek Seli
+what = Cok sayida sahte ag ilan eder.
+when = Istemci liste davranisini olcmek icin.
+
+[attacks.beacon]
+name = Beacon Spam
+what = Dosyadan alinan beacon'lari tekrarlar.
+when = Beacon ayristirmasini test etmek icin.
+
+[attacks.csa]
+name = Kanal Degistirme
+what = Istemcileri baska bir kanala zorlar.
+when = Istemcinin AP'sini izleyip izlemedigini olcmek icin.
+
+[attacks.sae]
+name = SAE Commit Seli
+what = WPA3 dogrulama denemelerini baslatir.
+when = SAE commit akisini incelemek icin.
+
+[attacks.quiet]
+name = Sessiz Mod
+what = Hicbir sey gondermez, yalnizca izler.
+when = Yan etkisi olmayan pasif calisma icin.
+
+[scanners]
+title = WiFi > Tarayicilar
+path  = WiFi>Tarayici>
+note  = Tarayicilarin calismasi icin cihaz denetlenen aga bagli olmalidir.
+
+[scanners.ping]
+name = Ping Tarama
+what = Hangi adreslerin cevap verdigini gosterir.
+when = Canli cihazlari hizla bulmak icin.
+
+[scanners.arp]
+name = ARP Tarama
+what = IP adresini donanim adresine baglar.
+when = Cihaz envanteri cikarmak icin.
+
+[scanners.telnet]
+name = Telnet Tarama
+what = 23 numarali portun acik oldugunu bulur.
+when = Yonetim altinda olmayan cihaz bulmak icin.
+
+[scanners.ssh]
+name = SSH Tarama
+what = Ayni is, 22 numarali portta.
+when = Acik sunuculari fark etmek icin.
+
+[scanners.http]
+name = HTTP / HTTPS
+what = Web sunucularini bulur, basliklarini okur.
+when = Bir cihazin ne calistirdigini anlamak icin.
+
+[scanners.rdp]
+name = RDP Tarama
+what = Uzak masaustu sunucularini 3389 portunda bulur.
+when = Acik masaustlerini denetlemek icin.
+
+[capture]
+title = El sikisma yakalama
+step1 = Once WiFi>Koklayici>Beacon Tarama calistirin.
+step2 = Istediginiz BSSID'i not edin.
+step3 = Sonra WiFi>Koklayici>EAPOL/PMKID Tara calistirin.
+step4 = Kendi AP'nize dokunun, sadece o hedeflensin.
+step5 = Deauth gider, istemci geri gelir ve el sikisma olusur.
+step6 = Complete EAPOL, dort mesaji da tamamlananlari sayar.
+step7 = Kayit dosyasi SD kartta belirir.
+step8 = Her cerceve hangi AP'ye ait oldugunu yazar.
+step9 = Kirmizi Dropped, tamponun doldugu ve kaydin eksik oldugu demektir.
+
+[terms]
+title = Terimler
+
+[terms.eapol]
+a = EAPOL, 802.1X'te tanimlanan dort yonlu anahtar el sikismasidir.
+
+[terms.sae]
+a = SAE, WPA3'un Esitlerin Eszamanli Dogrulama yontemidir.
+
+[terms.pmkid]
+a = PMKID, Eslesme Anahtari Kimligidir.
+
+[terms.bssid]
+a = BSSID, erisim noktasinin donanim adresidir.
+
+[terms.ssid]
+a = SSID, agin adidir.
+
+[terms.promiscuous]
+a = Promiscuous mod, radyonun yalnizca kendi trafigi degil butun trafigi duymasidir.
+
+[terms.deauth]
+a = Deauth, istemciyi yeniden baglamaya zorlayan bir cercevedir.
+
+[terms.pcapng]
+a = pcapng, her cerceveye not eklenebilen kayit bicimidir.
+
+[terms.pcap]
+a = pcap, aircrack-ng'in okudugu daha eski kayit bicimidir.
