@@ -577,8 +577,8 @@ inline const char *helpText(HelpId id) {
 // forward and stops at the first empty one.
 inline uint8_t helpLines(HelpId base, const char **out, uint8_t max) {
   uint8_t n = 0;
-  for (HelpId id = base; id < HELP_ID_MAX && n < max; ++id, ++n) {
-    const char *s = helpText(id);
+  for (uint16_t i = base; i < HELP_ID_MAX && n < max; ++i, ++n) {
+    const char *s = helpText(static_cast<HelpId>(i));
     if (s == nullptr || s[0] == '\0') break;
     out[n] = s;
   }
