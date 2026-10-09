@@ -399,6 +399,10 @@ Menu bootLogMenu;
   void buildHelpLangMenu();
   // Reference helpers. addNodes() is private, so these have to be members.
   void addBackNode(Menu* menu, Menu* parent);
+  void addRow(Menu* menu, HelpId id, uint8_t color, int icon);
+  void addRowLines(Menu* menu, HelpId base, uint8_t color, int icon);
+  void addMode(Menu* menu, HelpId name, HelpId what, HelpId when,
+              HelpId path, bool show_path, int category);
 void RunSetup();
     void orientDisplay();
 };

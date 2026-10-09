@@ -45,13 +45,6 @@ const char *helpText(HelpId id);
 // one. Returns how many were written, capped at `max`.
 uint8_t helpLines(HelpId base, const char **out, uint8_t max);
 
-// Outermost menu, "Device > Quick Reference".
-enum HelpIndexId : uint8_t {
-  H_INDEX_TITLE = 0,
-  H_INDEX_LANGUAGE,
-  H_INDEX_COUNT
-};
-
 void helpSetLang(HelpLang lang);
 HelpLang helpGetLang();
 
