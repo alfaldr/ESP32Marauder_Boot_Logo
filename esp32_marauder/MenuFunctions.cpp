@@ -2258,15 +2258,15 @@ void MenuFunctions::buildHelpCaptureMenu() {
 void MenuFunctions::buildHelpTermsMenu() {
   helpTermsMenu.list->clear();
 
-  addRowLines(this, &helpTermsMenu, H_TERMS_EAPOL, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_SAE, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_PMKID, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_BSSID, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_SSID, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_PROMISCUOUS, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_DEAUTH, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_PCAPNG, TFTWHITE);
-  addRowLines(this, &helpTermsMenu, H_TERMS_PCAP, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_EAPOL_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_SAE_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PMKID_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_BSSID_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_SSID_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PROMISCUOUS_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_DEAUTH_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PCAPNG_A, TFTWHITE);
+  addRowLines(this, &helpTermsMenu, H_TERMS_PCAP_A, TFTWHITE);
 
   addBackNode(&helpTermsMenu, &helpMenu);
 }
