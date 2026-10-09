@@ -200,6 +200,7 @@ Menu bootLogMenu;
     Menu helpMenu;
     Menu helpScanMenu;
     Menu helpAttackMenu;
+    Menu helpScannerMenu;
     Menu helpCaptureMenu;
     Menu helpTermsMenu;
 
@@ -391,6 +392,7 @@ Menu bootLogMenu;
   void buildHelpMenu();
   void buildHelpScanMenu();
   void buildHelpAttackMenu();
+  void buildHelpScannerMenu();
   void buildHelpCaptureMenu();
   void buildHelpTermsMenu();
   // Reference helpers. addNodes() is private, so these have to be members.

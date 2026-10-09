@@ -2094,13 +2094,17 @@ void MenuFunctions::addBackNode(Menu *menu, Menu *parent) {
 void MenuFunctions::buildHelpMenu() {
   helpMenu.list->clear();
 
-  this->addNodes(&helpMenu, "WiFi Scans", TFTWHITE, SCANNERS, [this]() {
+  this->addNodes(&helpMenu, "WiFi > Sniffers", TFTWHITE, SNIFFERS, [this]() {
     this->buildHelpScanMenu();
     this->changeMenu(&helpScanMenu, true);
   });
-  this->addNodes(&helpMenu, "Attacks", TFTWHITE, ATTACKS, [this]() {
+  this->addNodes(&helpMenu, "WiFi > Attacks", TFTWHITE, ATTACKS, [this]() {
     this->buildHelpAttackMenu();
     this->changeMenu(&helpAttackMenu, true);
+  });
+  this->addNodes(&helpMenu, "WiFi > Scanners", TFTWHITE, SCANNERS, [this]() {
+    this->buildHelpScannerMenu();
+    this->changeMenu(&helpScannerMenu, true);
   });
   this->addNodes(&helpMenu, "Capture a Handshake", TFTORANGE, EAPOL, [this]() {
     this->buildHelpCaptureMenu();
@@ -2114,15 +2118,50 @@ void MenuFunctions::buildHelpMenu() {
   addBackNode(&helpMenu, &deviceMenu);
 }
 
+// Each mode gets two lines: where to find it and what it does, then a dimmed
+// line with a typical reason to reach for it. Both stay under ~44 characters,
+// which is what fits between the button borders at FreeMono9pt7b, so nothing
+// has to scroll sideways to read.
 void MenuFunctions::buildHelpScanMenu() {
   helpScanMenu.list->clear();
 
-  addInfoNode(&helpScanMenu, "scanap - list nearby APs", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "scansta - APs and their clients", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "scanall - every scan, one after another", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "chanact - frame count per channel", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "sniffraw - save every frame to file", TFTLIGHTGREY);
-  addInfoNode(&helpScanMenu, "All listen only. Nothing is sent.", TFTGREEN);
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Beacon Sniff", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  lists APs, saves one beacon each", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: first, to find a target BSSID", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>EAPOL/PMKID Scan", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  saves 4-way keys; send deauth too", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: grab keys of a known AP", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Probe Request Sniff", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  what devices are looking for", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: see which networks are sought", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Deauth Sniff", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  who is being kicked off, and by whom", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: spot a jammer or a bully AP", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Packet Monitor", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  counts and speeds per channel", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: find the quietest channel", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Channel Analyzer", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  live traffic graph per channel", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: watch one channel over time", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Raw Capture", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  saves every frame, no filtering", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: when you do not know what to look for", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>SAE Commit", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  WPA3 handshake equivalent", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: the target network is WPA3", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "WiFi>Sniffers>Detect Pineapple", TFTWHITE);
+  addInfoNode(&helpScanMenu, "  finds Pineapple-style rogue APs", TFTLIGHTGREY);
+  addInfoNode(&helpScanMenu, "  use: audit your own venue for rogue APs", TFTLIGHTGREY);
+
+  addInfoNode(&helpScanMenu, "All sniffers only listen.", TFTGREEN);
 
   addBackNode(&helpScanMenu, &helpMenu);
 }
@@ -2130,31 +2169,88 @@ void MenuFunctions::buildHelpScanMenu() {
 void MenuFunctions::buildHelpAttackMenu() {
   helpAttackMenu.list->clear();
 
-  addInfoNode(&helpAttackMenu, "deauth - kick clients off an AP", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "  -s -d  target one client only", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "csa - flood channel switch notices", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "saecommit - WPA3 SAE commit", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "beacon - flood fake beacons", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "badmsg - malformed mgmt frames", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "quiet - probe, disrupt nothing", TFTLIGHTGREY);
-  addInfoNode(&helpAttackMenu, "These transmit. Use on your own net.", TFTRED);
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Deauth Flood", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  kicks every client off the AP", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: force a reconnect, or test", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "     that clients recover", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Deauth Targeted", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  one client only, not the whole AP", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: bring down one device, quietly", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Probe Req Flood", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  many fake networks advertised", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: test client list behaviour", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Beacon Spam List", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  replays beacons from a list file", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: test beacon parsing", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Channel Switch", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  forces clients onto another channel", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: prove a client follows the AP", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>SAE Commit Flood", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  drives WPA3 authentication attempts", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: study SAE commit exchanges", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "WiFi>Attacks>Quiet Time", TFTWHITE);
+  addInfoNode(&helpAttackMenu, "  sends nothing, just observes", TFTLIGHTGREY);
+  addInfoNode(&helpAttackMenu, "  use: passive work, no side effects", TFTLIGHTGREY);
+
+  addInfoNode(&helpAttackMenu, "Attacks transmit. Own network only.", TFTRED);
 
   addBackNode(&helpAttackMenu, &helpMenu);
+}
+
+void MenuFunctions::buildHelpScannerMenu() {
+  helpScannerMenu.list->clear();
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>Ping Scan", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  which addresses answer", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: find live hosts fast", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>ARP Scan", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  maps IP to hardware address", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: build a device inventory", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>Telnet Scan", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  port 23 open and reachable", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: find un-managed gear", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>SSH Scan", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  same, on port 22", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: spot servers exposed", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>HTTP / HTTPS", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  finds web servers and titles", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: identify what a device runs", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "WiFi>Scanners>RDP Scan", TFTWHITE);
+  addInfoNode(&helpScannerMenu, "  port 3389, remote desktop hosts", TFTLIGHTGREY);
+  addInfoNode(&helpScannerMenu, "  use: check for exposed desktops", TFTLIGHTGREY);
+
+  addInfoNode(&helpScannerMenu, "Scanners need the device joined to", TFTGREEN);
+  addInfoNode(&helpScannerMenu, "the network you are auditing.", TFTGREEN);
+
+  addBackNode(&helpScannerMenu, &helpMenu);
 }
 
 void MenuFunctions::buildHelpCaptureMenu() {
   helpCaptureMenu.list->clear();
 
-  addInfoNode(&helpCaptureMenu, "1. WiFi > Scan APs", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "2. Note your AP's BSSID", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "3. WiFi > Scan EAPOL", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "4. Tap your AP to target it", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "5. Deauth is sent; client", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "   reconnects, handshake runs", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "6. 'Complete EAPOL' counts", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "   finished handshakes", TFTLIGHTGREY);
-  addInfoNode(&helpCaptureMenu, "7. File lands on the SD card", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "1. WiFi>Sniffers>Beacon Sniff", TFTWHITE);
+  addInfoNode(&helpCaptureMenu, "2. Note the BSSID you want", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "3. WiFi>Sniffers>EAPOL/PMKID Scan", TFTWHITE);
+  addInfoNode(&helpCaptureMenu, "4. Tap your AP to target just it", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "5. Deauth goes out, the client", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "   rejoins and runs the handshake", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "6. Complete EAPOL counts the ones", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "   that finished all four messages", TFTLIGHTGREY);
+  addInfoNode(&helpCaptureMenu, "7. The file lands on the SD card", TFTLIGHTGREY);
   addInfoNode(&helpCaptureMenu, "8. Every frame names its AP", TFTGREEN);
+  addInfoNode(&helpCaptureMenu, "9. Red 'Dropped' means the buffer", TFTORANGE);
+  addInfoNode(&helpCaptureMenu, "   was too full: capture is short", TFTORANGE);
 
   addBackNode(&helpCaptureMenu, &helpMenu);
 }
@@ -2162,17 +2258,17 @@ void MenuFunctions::buildHelpCaptureMenu() {
 void MenuFunctions::buildHelpTermsMenu() {
   helpTermsMenu.list->clear();
 
-  addInfoNode(&helpTermsMenu, "EAPOL - 4-way key handshake, 802.1X", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "SAE - Simultaneous Auth. of Equals", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "PMKID - Pairwise Master Key ID", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "BSSID - the AP's hardware address", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "SSID - the network's name", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "promiscuous - hear all traffic,", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "EAPOL - 4-way key handshake, 802.1X", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "SAE - Simultaneous Auth. of Equals", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "PMKID - Pairwise Master Key ID", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "BSSID - the AP's hardware address", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "SSID - the network's name", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "promiscuous - hear all traffic,", TFTWHITE);
   addInfoNode(&helpTermsMenu, "   not just our own", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "deauth - a frame that forces a", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "deauth - a frame that forces a", TFTWHITE);
   addInfoNode(&helpTermsMenu, "   client to rejoin", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "pcapng - capture file, keeps notes", TFTLIGHTGREY);
-  addInfoNode(&helpTermsMenu, "pcap - old format, for aircrack-ng", TFTLIGHTGREY);
+  addInfoNode(&helpTermsMenu, "pcapng - capture file, keeps notes", TFTWHITE);
+  addInfoNode(&helpTermsMenu, "pcap - old format, for aircrack-ng", TFTWHITE);
 
   addBackNode(&helpTermsMenu, &helpMenu);
 }
@@ -2207,6 +2303,7 @@ void MenuFunctions::RunSetup()
   helpMenu.list = new LinkedList<MenuNode>();
   helpScanMenu.list = new LinkedList<MenuNode>();
   helpAttackMenu.list = new LinkedList<MenuNode>();
+  helpScannerMenu.list = new LinkedList<MenuNode>();
   helpCaptureMenu.list = new LinkedList<MenuNode>();
   helpTermsMenu.list = new LinkedList<MenuNode>();
   #ifdef HAS_GPS
