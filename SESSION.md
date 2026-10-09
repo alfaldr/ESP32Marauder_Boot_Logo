@@ -77,8 +77,8 @@ yazildi ve dogrulandi. Icerir:
    dosya icerigi etkilenmez: yakalanan ag adlari yorumlara ham bayt olarak
    yazildigi icin SSID'ler Turkce karakterleri kayipsiz tasir
    (orn. `Saygılarr`), yalnizca ekran cizimi kisitli.
-4. Quick Reference sayfalama (`1/2 dokun: ileri`) kullanici tarafindan
-   dogrulanmadi.
+4. ~~Quick Reference sayfalama~~ **Dogrulandi** (2026-10-09): `1/2 dokun:
+   ileri` ile sayfa ilerletme calisiyor, son sayfadan sonra dizine donuyor.
 5. Iptal edilenler: `[x]` butonu, Boot Log metin ekranina cevirme.
 
 ## Kalici tuslaklar
