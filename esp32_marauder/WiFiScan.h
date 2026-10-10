@@ -389,6 +389,21 @@ enum class MacSortMode : uint8_t {
 
 class WiFiScan
 {
+
+  // Networks whose beacon is written to a capture, remembered by BSSID.
+  //
+  // One beacon per network is what a capture needs: aircrack-ng takes the ESSID
+  // and sequence counters from a single one, and every extra beacon only crowds
+  // EAPOL frames out of the write buffer. Measured on a fixed-channel run:
+  // writing all of them produced 4783 beacons against 3 EAPOL frames.
+  //
+  // Six bytes each, held in static storage with no allocation, because the
+  // alternative -- a flag on AccessPoint, updated through LinkedList::set --
+  // allocates two Strings per frame on a path that runs tens of times a
+  // second, which is what crashed EAPOL mode. 64 entries is well past the
+  // number of networks a single channel carries.
+  static constexpr uint8_t kMaxBeaconRecords = 64;
+
   private:
 #ifdef HAS_PSRAM
     static constexpr size_t REMOTE_ID_CAPACITY = 24;

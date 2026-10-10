@@ -57,20 +57,6 @@ size_t packetBlockFooterSize(size_t comment_len);
 // and a longer string crowds out captured frames in the write buffer.
 constexpr size_t kMaxPacketComment = 96;
 
-  // Networks whose beacon is written to a capture, remembered by BSSID.
-  //
-  // One beacon per network is what a capture needs: aircrack-ng takes the ESSID
-  // and sequence counters from a single one, and every extra beacon only
-  // crowds EAPOL frames out of the write buffer. Measured on a fixed-channel
-  // run: writing all of them produced 4783 beacons against 3 EAPOL frames.
-  //
-  // Six bytes each, held in static storage with no allocation, because the
-  // alternative -- a flag on AccessPoint, updated through LinkedList::set --
-  // allocates two Strings per frame on a path that runs tens of times a
-  // second, which is what crashed EAPOL mode. 64 entries covers 64 networks,
-  // which is well past what a single channel carries.
-  constexpr uint8_t kMaxBeaconRecords = 64;
-
 // Each returns the number of bytes written, or 0 if `capacity` is too small.
 // Nothing is retained; the caller owns `output`.
 size_t makeSectionHeaderBlock(uint8_t* output, size_t capacity);

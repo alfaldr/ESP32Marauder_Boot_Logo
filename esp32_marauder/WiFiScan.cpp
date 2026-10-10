@@ -10404,7 +10404,7 @@ uint32_t WiFiScan::getCompleteEapol(int check_index) {
   // second that exhausted the heap inside String::copy and took the device down
   // with LoadProhibited. Plain bytes in static storage allocate nothing and
   // cannot be corrupted by a failed allocation elsewhere.
-  static uint8_t g_saved_beacons[marauder::kMaxBeaconRecords][6];
+  static uint8_t g_saved_beacons[kMaxBeaconRecords][6];
   static uint8_t g_saved_beacon_count = 0;
 
   void WiFiScan::eapolBeaconRecordsReset() {
@@ -10749,7 +10749,7 @@ uint32_t WiFiScan::getCompleteEapol(int check_index) {
     }
 
     if (!already_saved) {
-      if (g_saved_beacon_count < marauder::kMaxBeaconRecords) {
+      if (g_saved_beacon_count < kMaxBeaconRecords) {
         memcpy(g_saved_beacons[g_saved_beacon_count], bssid_bytes, 6);
         g_saved_beacon_count++;
       }
