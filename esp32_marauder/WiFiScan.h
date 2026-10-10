@@ -1145,6 +1145,10 @@ uint32_t deauth_tx_events = 0;  // beacons that triggered a send
     uint8_t getMultiSSIDChannel(size_t index) const;
     bool selectMultiSSIDFoxTarget(size_t index);
     uint32_t getCompleteEapol(int check_index = -1);
+    // Forgets which networks have already had their beacon written to the
+    // current capture. Called when an EAPOL scan starts, so each run gets a
+    // fresh set instead of treating every BSSID as already recorded.
+    void eapolBeaconRecordsReset();
     void drawChannelLine();
     #ifdef HAS_SCREEN
       int8_t checkAnalyzerButtons(uint32_t currentTime);

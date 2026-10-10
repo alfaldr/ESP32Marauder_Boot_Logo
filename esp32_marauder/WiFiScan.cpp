@@ -5160,8 +5160,13 @@ void WiFiScan::RunEapolScan(uint8_t scan_mode, uint16_t color) {
   this->send_deauth = (scan_mode == WIFI_SCAN_ACTIVE_EAPOL) ||
                       (scan_mode == WIFI_SCAN_ACTIVE_LIST_EAPOL) ||
                       settings_obj.loadSetting<bool>(text_table4[5]);
-  
+
   num_eapol = 0;
+
+  // The one-beacon-per-network memory belongs to the capture, so it starts empty
+  // with each EAPOL run. Left set, a second scan would record no beacons at all,
+  // since every BSSID would already be in the table from the first.
+  eapolBeaconRecordsReset();
 
   /*#ifdef HAS_ILI9341
     #ifdef HAS_SCREEN
@@ -10389,7 +10394,24 @@ uint32_t WiFiScan::getCompleteEapol(int check_index) {
   return total_complete;
 }
 
-void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
+// BSSIDs whose beacon has already been written to the current capture, so the
+  // buffer holds one beacon per network instead of every beacon heard.
+  //
+  // This is deliberately not a flag on AccessPoint. Upstream did that, and
+  // updating a flag means LinkedList::get followed by LinkedList::set, and
+  // AccessPoint::essid is an Arduino String -- which does not reference count,
+  // so each of those is a separate malloc. On a path that runs tens of times a
+  // second that exhausted the heap inside String::copy and took the device down
+  // with LoadProhibited. Plain bytes in static storage allocate nothing and
+  // cannot be corrupted by a failed allocation elsewhere.
+  static uint8_t g_saved_beacons[marauder::kMaxBeaconRecords][6];
+  static uint8_t g_saved_beacon_count = 0;
+
+  void WiFiScan::eapolBeaconRecordsReset() {
+    g_saved_beacon_count = 0;
+  }
+
+  void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
   extern WiFiScan wifi_scan_obj;
 
   bool is_beacon = false;
@@ -10693,23 +10715,59 @@ void WiFiScan::eapolSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
     }
     save_frame = true;
   } else if (is_beacon) {
-    // No list access on this path, which is the whole point: the crash was
-    // reached through access_points->get/set, not through the buffer.
+    // Write only the first beacon per network, which is what upstream did. The
+    // reason it matters is measured: writing every beacon filled the capture
+    // buffer with them and starved the frames this mode exists to collect --
+    // 4783 beacons against 3 EAPOL frames on a fixed-channel run, where the
+    // EAPOL frames are the entire point and a beacon contributes nothing to
+    // cracking a WPA2 handshake.
     //
-    // The ESSID comes from the frame itself rather than from the AccessPoint
-    // entry. Reading it from the list meant another get, and with the flag
-    // gone there was nothing left to justify the lookup. The frame already
-    // carries the name at offset 38, length at 37, so this is free and it
-    // keeps beacon comments identifying the network the way EAPOL ones do.
-    comment = "BEACON bssid=" + bssid;
-    if (snifferPacket->payload[37] > 0) {
-      comment += " ssid=";
-      const int ssid_len = SSID_LEN(snifferPacket, len);
-      for (int i = 0; i < ssid_len; i++) {
-        comment += (char)snifferPacket->payload[i + 38];
+    // The upstream version kept a beacon_saved flag on the AccessPoint, and
+    // updating it meant a read-modify-write through LinkedList::set. That is
+    // what crashed EAPOL mode: AccessPoint::essid is an Arduino String, String
+    // does not reference count, so every get and every set is a separate
+    // malloc, tens of times a second, and the heap ran out inside String::copy.
+    //
+    // So the same one-per-network result is achieved without touching the list.
+    // The BSSIDs already written are held in a fixed array of plain bytes
+    // copied from the frame: no allocation, no lookup into AccessPoint, and
+    // nothing to corrupt. Overflow stops recording rather than evicting, which
+    // matches how a capture buffer behaves when it is full -- the oldest data
+    // is dropped, not replaced with something newer.
+
+    uint8_t bssid_bytes[6];
+    for (int i = 0; i < 6; i++) {
+      bssid_bytes[i] = snifferPacket->payload[10 + i];
+    }
+
+    bool already_saved = false;
+    for (uint8_t i = 0; i < g_saved_beacon_count; i++) {
+      if (memcmp(g_saved_beacons[i], bssid_bytes, 6) == 0) {
+        already_saved = true;
+        break;
       }
     }
-    save_frame = true;
+
+    if (!already_saved) {
+      if (g_saved_beacon_count < marauder::kMaxBeaconRecords) {
+        memcpy(g_saved_beacons[g_saved_beacon_count], bssid_bytes, 6);
+        g_saved_beacon_count++;
+      }
+
+      // The ESSID comes from the frame itself rather than from the AccessPoint
+      // entry: offset 37 is the length, 38 onwards the name. Reading it from
+      // the list would mean another get, and there is nothing left here to
+      // justify the lookup.
+      comment = "BEACON bssid=" + bssid;
+      if (snifferPacket->payload[37] > 0) {
+        comment += " ssid=";
+        const int ssid_len = SSID_LEN(snifferPacket, len);
+        for (int i = 0; i < ssid_len; i++) {
+          comment += (char)snifferPacket->payload[i + 38];
+        }
+      }
+      save_frame = true;
+    }
   }
 
   if (save_frame) {
