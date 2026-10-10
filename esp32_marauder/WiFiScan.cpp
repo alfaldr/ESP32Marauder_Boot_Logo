@@ -10394,6 +10394,25 @@ uint32_t WiFiScan::getCompleteEapol(int check_index) {
   return total_complete;
 }
 
+// Networks whose beacon is written to the current EAPOL capture, remembered
+// by BSSID, so the buffer holds one beacon per network instead of every beacon
+// heard.
+//
+// One beacon per network is what a capture needs: aircrack-ng takes the ESSID and
+// sequence counters from a single one, and every extra beacon only crowds EAPOL
+// frames out of the write buffer. Measured on a fixed-channel run, writing all of
+// them produced 4783 beacons against 3 EAPOL frames.
+//
+// Upstream used a beacon_saved flag on AccessPoint instead. Updating a flag means
+// LinkedList::get followed by LinkedList::set, and AccessPoint::essid is an
+// Arduino String, which does not reference count, so each of those is a
+// separate malloc. On a path running tens of times a second that exhausted the
+// heap inside String::copy: LoadProhibited, EXCVADDR 0x0f, eight minutes into a
+// capture. Plain bytes in static storage allocate nothing.
+//
+// 64 entries is well past the number of networks a single channel carries.
+static constexpr uint8_t kMaxBeaconRecords = 64;
+
 // BSSIDs whose beacon has already been written to the current capture, so the
   // buffer holds one beacon per network instead of every beacon heard.
   //
